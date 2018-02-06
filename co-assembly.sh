@@ -197,6 +197,7 @@ function check_read_mapping_samples {
 
 }
 
+
 function check_and_make_coassembly_dirs {
 	# Description: tests if coassembly directories exist (they should not!) and makes directories otherwise.
 	# GLOBAL params: OUTPUT_DIR, assembly_samples (array)
@@ -217,26 +218,7 @@ function check_and_make_coassembly_dirs {
 
 }
 
-function get_mapping_samples {
-	# Description: parses the input mapping sample names list into an array and checks they exist
-	# Params: list of mapping sample names (.list)
-	# Return: mapping_names (array of assembly_names)
-	
-	local mapping_list=$1
-	
-	mapping_names=($(cat ${mapping_list}))
-	
-	for name in ${mapping_names[@]}; do
-		atlas_path="${OUTPUT_DIR}/${name}"
-		
-		if [ ! -d ${atlas_path} ]; then
-			echo "ERROR: Cannot find path for required mapping sample ${atlas_path}. Exiting..."
-			quit 1
-		fi
-	done
-	
-}
-
+# TODO update to match new variable names.
 function concatenate_pre_assembly {
 	# Description: concatenates decontaminated read files from the individual ATLAS runs (according to assembly_names.list) in preparation for co-assembly
 	# Params: requires that 'assembly_names' array is globally available from 'get_assembly_samples'
@@ -254,15 +236,17 @@ function concatenate_pre_assembly {
 
 }
 
-# UNFINISHED
+# TODO: UNFINISHED
 function build_yaml {
 	# Description: Generates yaml file for user based on coassembly samples
+
+	# TODO: first make symbolic link to all samples in a temp dir to generate the config file. Then delete that temp folder.
 
 	atlas make-config --database-dir databases output/${CONFIG_FILEPATH} data
 
 }
 
-# UNTESTED
+# TODO: UNTESTED
 function run_atlas {
 	# Description: runs standard ATLAS pipeline, starting from assembly, for coassembly files
 	
@@ -279,7 +263,7 @@ function run_atlas {
 
 }
 
-
+# TODO: Unfinished
 function main {
 	echo "Running $(basename $0), version ${script_version}, on $(date)."
 	echo ""
@@ -293,11 +277,12 @@ function main {
 	start_time=$(date '+%y%m%d_%H%M')
 
 	
+	concatenate_pre_assembly
 	
 	#echo "Running co-assembly for ${#assembly_names[@]} samples and mapping with ${#mapping_names[@]} samples."
 	#echo ""
 	
-	concatenate_pre_assembly
+	
 
 }
 
