@@ -48,22 +48,22 @@ function test_inputs {
 	# Params: No input needed; relies on globally assigned variables above
 	
 	if [ ! -d $OUTPUT_DIR ]; then
-		echo "ERROR: Cannot find provided output directory ${OUTPUT_DIR}. Exiting..."
+		echo "ERROR: Cannot find output directory at '${OUTPUT_DIR}'. Exiting..."
 		quit 1
 	fi
 	
 	if [ ! -d $DATABASE_DIR ]; then
-		echo "ERROR: Cannot find provided database directory ${DATABASE_DIR}. Exiting..."
+		echo "ERROR: Cannot find database directory at '${DATABASE_DIR}'. Exiting..."
 		quit 1
 	fi
 	
-	if [ ! -f $ASSEMBLY_SAMPLES ]; then
-		echo "ERROR: Cannot find provided assembly sample names list ${ASSEMBLY_SAMPLES}. Exiting..."
+	if [ ! -f $CONFIG_FILEPATH ]; then
+		echo "ERROR: Cannot find ATLAS config file at '${CONFIG_FILEPATH}'. Exiting..."
 		quit 1
 	fi
 	
-	if [ ! -f $MAPPING_SAMPLES ]; then
-		echo "ERROR: Cannot find provided mapping sample names list ${MAPPING_SAMPLES}. Exiting..."
+	if [ ! -f $COASSEMBLY_GUIDE_FILEPATH ]; then
+		echo "ERROR: Cannot find coassembly guide file at ${COASSEMBLY_GUIDE_FILEPATH}. Exiting..."
 		quit 1
 	fi
 	
@@ -87,6 +87,7 @@ function get_coassembly_params {
 	
 	# Check headers of COASSEMBLY_GUIDE
 	local coassembly_headers=($(head -n 1 ${COASSEMBLY_GUIDE_FILEPATH}))
+	
 	if [ ${#coassembly_headers[@]} != 3 ]; then
 		# TODO improve this error message.
 		echo "ERROR: coassembly guide file has incorrect number of columns. Looking for 3 but found ${#coassembly_headers[@]}. Job terminating."
@@ -98,12 +99,12 @@ function get_coassembly_params {
 		exit 1
 	fi
 	
-	# Get params
+	# Get COASSEMBLY_GUIDE params
 	coassembly_names=($(tail -n +2 ${COASSEMBLY_GUIDE_FILEPATH} | cut -d $'\t' -f 1))
 	assembly_samples=($(tail -n +2 ${COASSEMBLY_GUIDE_FILEPATH} | cut -d $'\t' -f 2))
 	read_mapping_samples=($(tail -n +2 ${COASSEMBLY_GUIDE_FILEPATH} | cut -d $'\t' -f 3))
 	
-	# Test params are okay
+	# Test COASSEMBLY_GUIDE params are okay
 	check_coassembly_params
 	
 }
@@ -197,7 +198,7 @@ function check_read_mapping_samples {
 
 }
 
-
+# TODO: consider splitting into two functions (making dir separately from checking dir; e.g., make dir in concat. function)
 function check_and_make_coassembly_dirs {
 	# Description: tests if coassembly directories exist (they should not!) and makes directories otherwise.
 	# GLOBAL params: OUTPUT_DIR, assembly_samples (array)
