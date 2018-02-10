@@ -189,6 +189,36 @@ function check_coassembly_dirs {
 
 }
 
+
+# TODO: UNFINISHED
+function check_or_build_yaml {
+	# Description: If the provided .yaml filepath does not yet exist, generates yaml file for user based on coassembly samples, then exits for user to modify. If the .yaml filepath does exist, then moves forward with the analysis.
+
+	if [ -f ${CONFIG_FILEPATH} ]; then
+
+		# TODO: first make symbolic link to all samples in a temp dir to generate the config file. Then delete that temp folder once done (and mention this somewhere in the help message below when the script exits??).
+		# TODO proper variable assignment for function below
+		atlas make-config --database-dir databases output/${CONFIG_FILEPATH} data
+
+		echo "Created .yaml configuration file for the coassembly run at '${CONFIG_FILEPATH}'. Please edit this using a text editor to tweak any desired settings. Once ready to go, specify the edited version as the config_coassembly.yaml argument into this script (keeping all other arguments the same as the current run). Exiting for now..."
+		# TODO add example code for what the new run should look like, to guide the user.
+		exit 1
+
+	elif [ ! -f ${CONFIG_FILEPATH} ]; then
+
+		# TODO perform sanity check on provided .yaml to make sure it's actually for the coassemblies and not a mistake (e.g., try grep -q)
+		echo "Configuration (.yaml) file for coassemblies provided. Not generating a new one."
+	
+	else
+
+		echo "Something is wrong with the provided path for the .yaml configuration file. Job terminating."
+		exit 1
+
+	fi
+
+}
+
+
 function concatenate_pre_assembly {
 	# Description: concatenates decontaminated read files from the individual ATLAS runs (according to assembly_names.list) in preparation for co-assembly
 	# GLOBAL Params: 'assembly_names' (array) from 'get_assembly_samples'
@@ -233,30 +263,22 @@ function concatenate_pre_assembly {
 	done
 }
 
-# TODO: UNFINISHED
-function build_yaml {
-	# Description: Generates yaml file for user based on coassembly samples
-
-	# TODO: first make symbolic link to all samples in a temp dir to generate the config file. Then delete that temp folder.
-
-	atlas make-config --database-dir databases output/${CONFIG_FILEPATH} data
-
-}
-
 # TODO: UNTESTED
 function run_atlas {
 	# Description: runs standard ATLAS pipeline, starting from assembly, for coassembly files
+	# TODO: make sure this strategy actually works!!!
 	
 	local log_code=$(date '+%y%m%d_%H%M')
 	
-	# Define the step to force ATLAS to start from
-	local start_step=normalize_coverage_across_kmers
+	# Define the step to force ATLAS to start from and end at
+	local start_step="normalize_coverage_across_kmers"
+	local end_step="ADD_SOMETHING_HERE" # TODO
 	
 	# See what all steps of ATLAS would be without actually running ATLAS
-	atlas assemble --jobs ${threads} --out-dir output output/${CONFIG_FILEPATH} --force ${start_step} --dryrun > output/atlas_run_steps_${log_code}.log
+	atlas assemble --jobs ${threads} --out-dir output output/${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} --dryrun > output/atlas_run_steps_${log_code}.log
 	
 	# Run ATLAS
-	atlas assemble --jobs ${threads} --out-dir output output/${CONFIG_FILEPATH} --force ${start_step} 2>&1 | tee output/atlas_run_${log_code}.log
+	atlas assemble --jobs ${threads} --out-dir output output/${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} 2>&1 | tee output/atlas_run_${log_code}.log
 
 }
 
@@ -269,24 +291,34 @@ function main {
 	
 	# Get inputs
 	get_coassembly_params
-	
-	# Get date and time of start
-	start_time=$(date '+%y%m%d_%H%M')
 
-	
+	# Generate yaml and exit early, or continue on if yaml exists
+	check_or_build_yaml # TODO
+
+	# Get date and time of start
+	start_time=$(date)
+
 	concatenate_pre_assembly
-	
-	#echo "Running co-assembly for ${#assembly_names[@]} samples and mapping with ${#mapping_names[@]} samples."
-	#echo ""
-	
-	
+	run_atlas
+
+	# TODO functions not even started yet...
+	read_map_to_coassemblies
+	bin_coassemblies
+	# TODO can I run ATLAS on these bins for annotation in place of the standard MaxBin ones? Move the MaxBin ones elsewhere? (Or don't even generate them -- just have ATLAS stop before this point, then resume it)
+
+	finish_atlas # to finish annotation on bins as stated above.
+		
+
+	end_time=$(date)	
+	echo ""
+	echo "Coassembly finished. Output saved in ${OUTPUT_DIR}."
+	echo "Started at ${start_time} and finished at ${end_time}."
+	echo ""
+
+	echo "$(basename $0): finished."
+	echo ""
 
 }
 
+main
 
-echo ""
-echo "Replacing finished. Output saved as $(basename ${output_name})."
-echo ""
-
-echo "$(basename $0): finished."
-echo ""
