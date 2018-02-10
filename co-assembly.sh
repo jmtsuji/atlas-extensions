@@ -126,16 +126,16 @@ function check_assembly_samples {
 	# GLOBAL params: OUTPUT_DIR, assembly_samples (array)
 	# Local params: none
 	# Return: none
-	
-	# Temporarily change the internal fields separator (IFS) to parse comma separators. See Vince Buffalo's "Bioinformatics Data Skills" (1st Ed.) chapter 12, pg 407 and corresponding Github page README at https://github.com/vsbuffalo/bds-files/tree/master/chapter-12-pipelines (accessed Nov 19, 2017)
-	OFS="$IFS"
-	IFS=,
-	
+		
 	# Each coassembly_name has several associated assembly_samples separated by commas. Examine one coassembly_name at a time.
 	for coassembly_sample in ${assembly_samples[@]}; do
+
+		# Temporarily change the internal fields separator (IFS) to parse comma separators. See Vince Buffalo's "Bioinformatics Data Skills" (1st Ed.) chapter 12, pg 407 and corresponding Github page README at https://github.com/vsbuffalo/bds-files/tree/master/chapter-12-pipelines (accessed Nov 19, 2017)
+		OFS="$IFS"
+		IFS=,
 		
 		# Get names of individual samples provided for that coassembly_name
-		assembly_sample_IDs=($(cat ${coassembly_sample}))
+		assembly_sample_IDs=(${coassembly_sample})
 		
 		# Iteratively check each assembly_sample to see if it exists and exit if not.
 		for sample_ID in ${assembly_sample_IDs[@]}; do
@@ -145,18 +145,19 @@ function check_assembly_samples {
 			if [ ! -d ${atlas_path} ]; then
 				echo "ERROR: ${sample_ID}: Cannot find path for assembly sample. Looking in '${atlas_path}'. Exiting..."
 				exit 1
-			elif [ ! -f ${qc_filepath}/${sample_ID}_QC_*.fastq.gz ]; then
-				echo "ERROR: ${sample_ID}: Cannot find finished QC files following pattern '${sample_ID}_QC_*.fastq.gz' in '${qc_filepath}'. Exiting..."
+			elif [ ! -f ${qc_filepath}/${sample_ID}_QC_se.fastq.gz ]; then
+				# TODO: confirm that se reads will be present both for paired end and R1/R2. This test might not be sufficient right now.
+				echo "ERROR: ${sample_ID}: Cannot find finished QC files '${sample_ID}_QC_se.fastq.gz' in '${qc_filepath}'. Exiting..."
 				exit 1 
 			fi
 			
 		done
-		
+	
+		# Fix the IFS
+		IFS="$OFS"
+	
 	done
-	
-	# Fix the IFS
-	IFS="$OFS"
-	
+		
 }
 
 function check_read_mapping_samples {
