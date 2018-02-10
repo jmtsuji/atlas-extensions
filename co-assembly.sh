@@ -116,19 +116,30 @@ function check_coassembly_params {
 	# Return: none
 
 	check_and_make_coassembly_dirs
-	check_assembly_samples
-	check_read_mapping_samples
+	check_samples assembly
+	check_samples mapping
 
 }
 
-function check_assembly_samples {
-	# Description: tests if each input assembly sample exists
-	# GLOBAL params: OUTPUT_DIR, assembly_samples (array)
-	# Local params: none
+function check_samples {
+	# Description: tests if each input assembly/mapping sample exists
+	# GLOBAL params: OUTPUT_DIR, assembly_samples OR read_mapping_samples (arrays containing strings of comma-separated values)
+	# Local params: sample_type (string; either 'assembly' or 'mapping')
 	# Return: none
-		
+
+	sample_type=$1
+
+	if [ $sample_type == "assembly" ]; then
+		samples=(${assembly_samples[@]})
+	elif [ $sample_type == "mapping" ]; then
+		samples=(${read_mapping_samples[@]})
+	else
+		echo "ERROR: either 'assembly' or 'mapping' should be passed to check_samples. Instead, got '${sample_type}'. Job terminating."
+		exit 1
+	fi
+
 	# Each coassembly_name has several associated assembly_samples separated by commas. Examine one coassembly_name at a time.
-	for coassembly_sample in ${assembly_samples[@]}; do
+	for coassembly_sample in ${samples[@]}; do
 
 		# Temporarily change the internal fields separator (IFS) to parse comma separators. See Vince Buffalo's "Bioinformatics Data Skills" (1st Ed.) chapter 12, pg 407 and corresponding Github page README at https://github.com/vsbuffalo/bds-files/tree/master/chapter-12-pipelines (accessed Nov 19, 2017)
 		OFS="$IFS"
@@ -158,45 +169,6 @@ function check_assembly_samples {
 	
 	done
 		
-}
-
-function check_read_mapping_samples {
-	# Description: tests if each input mapping sample exists
-	# GLOBAL params: OUTPUT_DIR, read_mapping_samples (array)
-	# Local params: none
-	# Return: none
-	
-	# Temporarily change the internal fields separator (IFS) to parse comma separators. See Vince Buffalo's "Bioinformatics Data Skills" (1st Ed.) chapter 12, pg 407 and corresponding Github page README at https://github.com/vsbuffalo/bds-files/tree/master/chapter-12-pipelines (accessed Nov 19, 2017)
-	OFS="$IFS"
-	IFS=,
-	
-	# Each coassembly_name has several associated assembly_samples separated by commas. Examine one coassembly_name at a time.
-	for coassembly_sample in ${read_mapping_samples[@]}; do
-		
-		# Get names of individual samples provided for that coassembly_name
-		read_mapping_sample_IDs=($(cat ${coassembly_sample}))
-		
-		# Iteratively check each assembly_sample to see if it exists and exit if not.
-		for sample_ID in ${read_mapping_sample_IDs[@]}; do
-			atlas_path="${OUTPUT_DIR}/${sample_ID}"
-			qc_filepath="${atlas_path}/sequence_quality_control"
-			
-			if [ ! -d ${atlas_path} ]; then
-				echo "ERROR: ${sample_ID}: Cannot find path for read mapping sample. Looking in '${atlas_path}'. Exiting..."
-				exit 1
-			elif [ ! -f ${qc_filepath}/${sample_ID}_QC_se.fastq.gz ]; then
-				# TODO: confirm that se reads will be present both for paired end and R1/R2. This test might not be sufficient right now.
-				echo "ERROR: ${sample_ID}: Cannot find finished QC files '${sample_ID}_QC_se.fastq.gz' in '${qc_filepath}'. Exiting..."
-				exit 1 
-			fi
-			
-		done
-		
-	done
-	
-	# Fix the IFS
-	IFS="$OFS"
-
 }
 
 # TODO: consider splitting into two functions (making dir separately from checking dir; e.g., make dir in concat. function)
