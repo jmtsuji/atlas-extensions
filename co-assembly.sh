@@ -115,7 +115,7 @@ function check_coassembly_params {
 	# Local params: none
 	# Return: none
 
-	check_and_make_coassembly_dirs
+	check_coassembly_dirs
 	check_samples assembly
 	check_samples mapping
 
@@ -171,19 +171,16 @@ function check_samples {
 		
 }
 
-# TODO: consider splitting into two functions (making dir separately from checking dir; e.g., make dir in concat. function)
-function check_and_make_coassembly_dirs {
+function check_coassembly_dirs {
 	# Description: tests if coassembly directories exist (they should not!) and makes directories otherwise.
-	# GLOBAL params: OUTPUT_DIR, assembly_samples (array)
+	# GLOBAL params: OUTPUT_DIR, coassembly_names (array)
 	# Local params: none
-	# Return: mapping_names (array of assembly_names)
+	# Return: none
 	
 	for name in ${coassembly_names[@]}; do
 		coassembly_dir="${OUTPUT_DIR}/${name}"
 		
-		if [ ! -d ${coassembly_dir} ]; then
-			mkdir ${coassembly_dir}
-		else
+		if [ -d ${coassembly_dir} ]; then
 			echo "ERROR: found pre-existing output co-assembly directory ${coassembly_dir}. Please delete before starting. Job terminating."
 			exit 1
 		fi
