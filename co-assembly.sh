@@ -127,12 +127,12 @@ function check_samples {
 	# Local params: sample_type (string; either 'assembly' or 'mapping')
 	# Return: none
 
-	sample_type=$1
+	local sample_type=$1
 
 	if [ $sample_type == "assembly" ]; then
-		samples=(${assembly_samples[@]})
+		local samples=(${assembly_samples[@]})
 	elif [ $sample_type == "mapping" ]; then
-		samples=(${read_mapping_samples[@]})
+		local samples=(${read_mapping_samples[@]})
 	else
 		echo "ERROR: either 'assembly' or 'mapping' should be passed to check_samples. Instead, got '${sample_type}'. Job terminating."
 		exit 1
@@ -142,16 +142,16 @@ function check_samples {
 	for coassembly_sample in ${samples[@]}; do
 
 		# Temporarily change the internal fields separator (IFS) to parse comma separators. See Vince Buffalo's "Bioinformatics Data Skills" (1st Ed.) chapter 12, pg 407 and corresponding Github page README at https://github.com/vsbuffalo/bds-files/tree/master/chapter-12-pipelines (accessed Nov 19, 2017)
-		OFS="$IFS"
+		local OFS="$IFS"
 		IFS=,
 		
 		# Get names of individual samples provided for that coassembly_name
-		assembly_sample_IDs=(${coassembly_sample})
+		local assembly_sample_IDs=(${coassembly_sample})
 		
 		# Iteratively check each assembly_sample to see if it exists and exit if not.
 		for sample_ID in ${assembly_sample_IDs[@]}; do
-			atlas_path="${OUTPUT_DIR}/${sample_ID}"
-			qc_filepath="${atlas_path}/sequence_quality_control"
+			local atlas_path="${OUTPUT_DIR}/${sample_ID}"
+			local qc_filepath="${atlas_path}/sequence_quality_control"
 			
 			if [ ! -d ${atlas_path} ]; then
 				echo "ERROR: ${sample_ID}: Cannot find path for assembly sample. Looking in '${atlas_path}'. Exiting..."
@@ -178,7 +178,7 @@ function check_coassembly_dirs {
 	# Return: none
 	
 	for name in ${coassembly_names[@]}; do
-		coassembly_dir="${OUTPUT_DIR}/${name}"
+		local coassembly_dir="${OUTPUT_DIR}/${name}"
 		
 		if [ -d ${coassembly_dir} ]; then
 			echo "ERROR: found pre-existing output co-assembly directory ${coassembly_dir}. Please delete before starting. Job terminating."
@@ -189,22 +189,48 @@ function check_coassembly_dirs {
 
 }
 
-# TODO update to match new variable names.
 function concatenate_pre_assembly {
 	# Description: concatenates decontaminated read files from the individual ATLAS runs (according to assembly_names.list) in preparation for co-assembly
-	# Params: requires that 'assembly_names' array is globally available from 'get_assembly_samples'
+	# GLOBAL Params: 'assembly_names' (array) from 'get_assembly_samples'
+	# Local params: none
+	# Return: writes files to disk (.fastq.gz)
 
 	echo "Concatenating pre-assembly files..."
 
-	local out_dir=${CO_ASSEMBLY_DIR}/sequence_quality_control
-	mkdir -p ${out_dir}
+	# For each coassembly that will be performed:
+	for i in $(seq 1 ${#coassembly_names[@]}); do
+		# Set counter to be based on zero, not one
+		local j=$((${i}-1))
 
-	for name in ${assembly_names[@]}; do
-		cat ${OUTPUT_DIR}/${name}/sequence_quality_control/${name}_QC_R1.fastq.gz >> ${out_dir}/${CO_ASSEMBLY_NAME}_QC_R1.fastq.gz
-		cat ${OUTPUT_DIR}/${name}/sequence_quality_control/${name}_QC_R2.fastq.gz >> ${out_dir}/${CO_ASSEMBLY_NAME}_QC_R2.fastq.gz
-		cat ${OUTPUT_DIR}/${name}/sequence_quality_control/${name}_QC_se.fastq.gz >> ${out_dir}/${CO_ASSEMBLY_NAME}_QC_se.fastq.gz		
+		local coassembly_name=${coassembly_names[${j}]}
+
+		# Make output directory for that coassembly sample
+		local coassembly_dir="${OUTPUT_DIR}/${coassembly_name}"
+		mkdir -p ${coassembly_dir}/sequence_quality_control
+
+		# Temporarily change the internal fields separator (IFS) to parse comma separators. See Vince Buffalo's "Bioinformatics Data Skills" (1st Ed.) chapter 12, pg 407 and corresponding Github page README at https://github.com/vsbuffalo/bds-files/tree/master/chapter-12-pipelines (accessed Nov 19, 2017)
+		local OFS="$IFS"
+		IFS=,
+
+		# Get names of individual samples provided for that coassembly_name
+		local assembly_sample_IDs=(${assembly_samples[${j}]})
+
+		echo "${coassembly_name}: ${assembly_sample_IDs[@]}"
+
+		# Concatenate the reads from each individual sample
+		for sample in ${assembly_sample_IDs[@]}; do
+
+			cat ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_QC_R1.fastq.gz >> ${coassembly_dir}/sequence_quality_control/${coassembly_name}_QC_R1.fastq.gz
+			cat ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_QC_R2.fastq.gz >> ${coassembly_dir}/sequence_quality_control/${coassembly_name}_QC_R2.fastq.gz
+			cat ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_QC_se.fastq.gz >> ${coassembly_dir}/sequence_quality_control/${coassembly_name}_QC_se.fastq.gz		
+
 	done
 
+	# Fix the IFS
+	IFS="$OFS"
+
+	echo ""
+	done
 }
 
 # TODO: UNFINISHED
