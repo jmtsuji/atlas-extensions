@@ -211,7 +211,12 @@ function check_yaml {
 
 	elif [ -f ${CONFIG_FILEPATH} ]; then
 
-		# TODO perform sanity check on provided .yaml to make sure it's actually for the coassemblies and not a mistake (e.g., try grep -q)
+		# Perform sanity check on provided .yaml to make sure it's actually for the coassemblies and not a mistake (i.e. original ATLAS file)
+		if ! grep -q ${coassembly_names[0]}; then
+			echo "ERROR: provided configuration file '${CONFIG_FILEPATH}' does not contain coassembly sample '${coassembly_names[0]}'. Are you sure you provided the right configuration file? Exiting..."
+			exit 1
+		fi
+		
 		echo "Configuration (.yaml) file for coassemblies provided. Not generating a new one."
 	
 	else
@@ -232,7 +237,7 @@ function build_yaml {
 	local temp_coassembly_dir="${OUTPUT_DIR}/coassembly_tmp"
 	
 	# Check if temp directory already exists (so that the script does not erase it later):
-	if [ ! -d ${local temp_coassembly_dir} ]; then
+	if [ ! -d ${temp_coassembly_dir} ]; then
 		local erase_temp_coassembly_dir="TRUE"
 	fi
 	
