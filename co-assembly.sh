@@ -191,20 +191,25 @@ function check_coassembly_dirs {
 
 
 # TODO: UNFINISHED
-function check_or_build_yaml {
+function check_yaml {
 	# Description: If the provided .yaml filepath does not yet exist, generates yaml file for user based on coassembly samples, then exits for user to modify. If the .yaml filepath does exist, then moves forward with the analysis.
+	# GLOBAL params: OUTPUT_DIR; DATABASE_DIR; CONFIG_FILEPATH
+	# Local params: none
+	# Return: writes .yaml to disk if not already existing
 
-	if [ -f ${CONFIG_FILEPATH} ]; then
-
-		# TODO: first make symbolic link to all samples in a temp dir to generate the config file. Then delete that temp folder once done (and mention this somewhere in the help message below when the script exits??).
-		# TODO proper variable assignment for function below
-		atlas make-config --database-dir databases output/${CONFIG_FILEPATH} data
-
-		echo "Created .yaml configuration file for the coassembly run at '${CONFIG_FILEPATH}'. Please edit this using a text editor to tweak any desired settings. Once ready to go, specify the edited version as the config_coassembly.yaml argument into this script (keeping all other arguments the same as the current run). Exiting for now..."
+	if [ ! -f ${CONFIG_FILEPATH} ]; then
+		
+		build_yaml
+		
+		echo "Created .yaml configuration file for the coassembly run at '${CONFIG_FILEPATH}'. \
+			Please edit this using a text editor to tweak any desired settings. \
+			Once ready to go, specify the edited version as the config_coassembly.yaml argument \
+			into this script (keeping all other arguments the same as the current run). Exiting for now..."
 		# TODO add example code for what the new run should look like, to guide the user.
+		
 		exit 1
 
-	elif [ ! -f ${CONFIG_FILEPATH} ]; then
+	elif [ -f ${CONFIG_FILEPATH} ]; then
 
 		# TODO perform sanity check on provided .yaml to make sure it's actually for the coassemblies and not a mistake (e.g., try grep -q)
 		echo "Configuration (.yaml) file for coassemblies provided. Not generating a new one."
@@ -216,6 +221,37 @@ function check_or_build_yaml {
 
 	fi
 
+}
+
+function build_yaml {
+	# Description: Generates yaml file for user based on coassembly samples.
+	# GLOBAL params: OUTPUT_DIR; DATABASE_DIR; CONFIG_FILEPATH
+	# Local params: none
+	# Return: writes .yaml to disk
+	
+	local temp_coassembly_dir="${OUTPUT_DIR}/coassembly_tmp"
+	
+	# Check if temp directory already exists (so that the script does not erase it later):
+	if [ ! -d ${local temp_coassembly_dir} ]; then
+		local erase_temp_coassembly_dir="TRUE"
+	fi
+	
+	# Make temporary directory for fake samples from which to generate the config file
+	mkdir -p ${temp_coassembly_dir}
+	
+	# Make fake samples
+	for name in ${coassembly_names[@]}; do
+		touch ${temp_coassembly_dir}/${name}.fastq.gz
+	done
+	
+	# Generate config file from fake samples
+	atlas make-config --database-dir ${DATABASE_DIR} ${CONFIG_FILEPATH} ${temp_coassembly_dir}
+	
+	# Cleanup
+	if [ $erase_temp_coassembly_dir == "TRUE" ]; then
+		rm -r ${temp_coassembly_dir}
+	fi
+	
 }
 
 
