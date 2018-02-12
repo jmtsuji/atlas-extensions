@@ -190,7 +190,6 @@ function check_coassembly_dirs {
 }
 
 
-# TODO: UNFINISHED
 function check_yaml {
 	# Description: If the provided .yaml filepath does not yet exist, generates yaml file for user based on coassembly samples, then exits for user to modify. If the .yaml filepath does exist, then moves forward with the analysis.
 	# GLOBAL params: OUTPUT_DIR; DATABASE_DIR; CONFIG_FILEPATH
@@ -212,7 +211,7 @@ function check_yaml {
 	elif [ -f ${CONFIG_FILEPATH} ]; then
 
 		# Perform sanity check on provided .yaml to make sure it's actually for the coassemblies and not a mistake (i.e. original ATLAS file)
-		if ! grep -q ${coassembly_names[0]}; then
+		if ! grep -q ${coassembly_names[0]} ${CONFIG_FILEPATH}; then
 			echo "ERROR: provided configuration file '${CONFIG_FILEPATH}' does not contain coassembly sample '${coassembly_names[0]}'. Are you sure you provided the right configuration file? Exiting..."
 			exit 1
 		fi
@@ -227,6 +226,7 @@ function check_yaml {
 	fi
 
 }
+
 
 function build_yaml {
 	# Description: Generates yaml file for user based on coassembly samples.
@@ -304,6 +304,7 @@ function concatenate_pre_assembly {
 	done
 }
 
+
 # TODO: UNTESTED
 function run_atlas {
 	# Description: runs standard ATLAS pipeline, starting from assembly, for coassembly files
@@ -313,15 +314,16 @@ function run_atlas {
 	
 	# Define the step to force ATLAS to start from and end at
 	local start_step="normalize_coverage_across_kmers"
-	local end_step="ADD_SOMETHING_HERE" # TODO
+	local end_step="sort_munged_blast_hits"
 	
 	# See what all steps of ATLAS would be without actually running ATLAS
-	atlas assemble --jobs ${threads} --out-dir output output/${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} --dryrun > output/atlas_run_steps_${log_code}.log
+	atlas assemble --jobs ${THREADS} --out-dir ${OUTPUT_DIR} ${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} --dryrun > output/atlas_run_steps_${log_code}.log
 	
 	# Run ATLAS
-	atlas assemble --jobs ${threads} --out-dir output output/${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} 2>&1 | tee output/atlas_run_${log_code}.log
+	atlas assemble --jobs ${THREADS} --out-dir ${OUTPUT_DIR} ${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} 2>&1 | tee output/atlas_run_${log_code}.log
 
 }
+
 
 # TODO: Unfinished
 function main {
