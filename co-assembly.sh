@@ -318,11 +318,13 @@ function make_atlas_dirs {
 		
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_filtered_R1.fastq.gz
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_filtered_R2.fastq.gz
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_filtered_se.fastq.gz
 		
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_clean_R1.fastq.gz
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_clean_R2.fastq.gz
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_clean_se.fastq.gz
 		
+		mkdir -p ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/PhiX_R1.fastq.gz
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/PhiX_R2.fastq.gz
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/PhiX_se.fastq.gz
@@ -337,7 +339,11 @@ function make_atlas_dirs {
 		touch ${OUTPUT_DIR}/${sample}/logs/${sample}_init.log
 		touch ${OUTPUT_DIR}/${sample}/logs/${sample}_deduplicate.log
 		touch ${OUTPUT_DIR}/${sample}/logs/${sample}_quality_filter.log
+		touch ${OUTPUT_DIR}/${sample}/logs/${sample}_quality_filtering_stats.txt
 		touch ${OUTPUT_DIR}/${sample}/logs/${sample}_decontamination.log
+		
+		mkdir -p ${OUTPUT_DIR}/ref ${OUTPUT_DIR}/logs
+		touch ${OUTPUT_DIR}/ref/genome/1/summary.txt
 		
 	done
 
