@@ -197,10 +197,10 @@ function check_yaml {
 		
 		build_yaml
 		
-		echo "Created .yaml configuration file for the coassembly run at '${CONFIG_FILEPATH}'. \
-			Please edit this using a text editor to tweak any desired settings. \
-			Once ready to go, specify the edited version as the config_coassembly.yaml argument \
-			into this script (keeping all other arguments the same as the current run). Exiting for now..."
+		printf "\nCreated .yaml configuration file for the coassembly run at '${CONFIG_FILEPATH}'.\n"
+		printf "Please edit this using a text editor to tweak any desired settings.\n"
+		printf "Once ready to go, specify the edited version as the config_coassembly.yaml argument"
+		printf "into this script (keeping all other arguments the same as the current run). Exiting for now...\n\n"
 		# TODO add example code for what the new run should look like, to guide the user.
 		
 		exit 1
@@ -303,27 +303,60 @@ function make_atlas_dirs {
 	
 	local coassembly_dir="${OUTPUT_DIR}/coassembly"
 	
-	# Make fake samples
+	# Make fake samples, round 1
 	for sample in ${coassembly_names[@]}; do
-		mkdir -p ${coassembly_dir}/${sample}/logs ${coassembly_dir}/ref/genome/1 ${coassembly_dir}/logs
+		mkdir -p ${coassembly_dir}/${sample}/logs ${coassembly_dir}/${sample}/sequence_quality_control/read_stats
+		mkdir -p ${coassembly_dir}/ref/genome/1 ${coassembly_dir}/ref/index/1
+		mkdir -p ${coassembly_dir}/logs/benchmarks
 		
-		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_raw_R1.fastq.gz
-		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_raw_R2.fastq.gz
+		touch ${coassembly_dir}/${sample}/logs/${sample}_init.log
+		#touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_raw_R1.fastq.gz
+		#touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_raw_R2.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/read_stats/raw_read_counts.tsv
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/read_stats/raw.zip
 		
-		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_deduplicated_R1.fastq.gz
-		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_deduplicated_R2.fastq.gz
+		mkdir -p ${coassembly_dir}/logs/benchmarks/deduplicate
+		touch ${coassembly_dir}/logs/benchmarks/deduplicate/${sample}.txt
+		touch ${coassembly_dir}/${sample}/logs/${sample}_deduplicate.log
+		#touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_deduplicated_R1.fastq.gz
+		#touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_deduplicated_R2.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/read_stats/deduplicated_read_counts.tsv
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/read_stats/deduplicated.zip
 		
-		
-		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_filtered_R1.fastq.gz
-		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_filtered_R2.fastq.gz
-		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_filtered_se.fastq.gz
+		mkdir -p ${coassembly_dir}/logs/benchmarks/quality_filter
+		touch ${coassembly_dir}/logs/benchmarks/quality_filter/${sample}.txt
+		touch ${coassembly_dir}/${sample}/logs/${sample}_quality_filter.log
+		#touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_filtered_R1.fastq.gz
+		#touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_filtered_R2.fastq.gz
+		#touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_filtered_se.fastq.gz
 		touch ${coassembly_dir}/${sample}/logs/${sample}_quality_filtering_stats.txt
-		
-		touch ${coassembly_dir}/ref/genome/1/summary.txt
-		
-		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_clean_R1.fastq.gz
-		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_clean_R2.fastq.gz
-		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_clean_se.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/read_stats/filtered_read_counts.tsv
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/read_stats/filtered.zip
+	
+	done
+
+	# Perform common step
+	touch ${coassembly_dir}/ref/index/1/chr1_index_k13_c4_b1.block
+	touch ${coassembly_dir}/ref/index/1/chr1_index_k13_c4_b1.block2.gz
+	touch ${coassembly_dir}/ref/genome/1/summary.txt
+	touch ${coassembly_dir}/ref/genome/1/info.txt
+	touch ${coassembly_dir}/ref/genome/1/namelist.txt
+	touch ${coassembly_dir}/ref/genome/1/merged_ref_5214708240339.fa.gz
+	touch ${coassembly_dir}/ref/genome/1/reflist.txt
+	touch ${coassembly_dir}/ref/genome/1/scaffolds.txt.gz
+	touch ${coassembly_dir}/ref/genome/1/chr1.chrom.gz
+	touch ${coassembly_dir}/logs/build_decontamination_db.log
+	
+	# Make fake samples, round 2
+	for sample in ${coassembly_names[@]}; do
+		mkdir -p ${coassembly_dir}/logs/benchmarks/decontamination
+		touch ${coassembly_dir}/logs/benchmarks/decontamination/${sample}.txt
+		touch ${coassembly_dir}/${sample}/logs/${sample}_decontamination.log
+		#touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_clean_R1.fastq.gz
+		#touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_clean_R2.fastq.gz
+		#touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_clean_se.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/read_stats/clean_read_counts.tsv
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/read_stats/clean.zip
 		
 		mkdir -p ${coassembly_dir}/${sample}/sequence_quality_control/contaminants
 		touch ${coassembly_dir}/${sample}/sequence_quality_control/contaminants/PhiX_R1.fastq.gz
@@ -339,6 +372,9 @@ function make_atlas_dirs {
 		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_QC_R1.fastq.gz
 		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_QC_R2.fastq.gz
 		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_QC_se.fastq.gz
+		touch ${coassembly_dir}/${sample}/logs/read_stats.log
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/read_stats/QC_read_counts.tsv
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/read_stats/QC.zip
 		
 	done
 
@@ -354,14 +390,13 @@ function run_atlas {
 	local log_code=$(date '+%y%m%d_%H%M')
 	
 	# Define the step to force ATLAS to start from and end at
-	local start_step="normalize_coverage_across_kmers"
 	local end_step="sort_munged_blast_hits"
 	
 	# See what all steps of ATLAS would be without actually running ATLAS
-	atlas assemble --jobs ${THREADS} --out-dir ${coassembly_dir} ${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} --dryrun > ${coassembly_dir}/atlas_run_steps_${log_code}.log
+	atlas assemble --jobs ${THREADS} --out-dir ${coassembly_dir} ${CONFIG_FILEPATH} --until ${end_step} --dryrun > ${coassembly_dir}/atlas_run_steps_${log_code}.log 2>&1
 	
 	# Run ATLAS
-	atlas assemble --jobs ${THREADS} --out-dir ${coassembly_dir} ${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} 2>&1 | tee ${coassembly_dir}/atlas_run_${log_code}.log
+	atlas assemble --jobs ${THREADS} --out-dir ${coassembly_dir} ${CONFIG_FILEPATH} --until ${end_step} 2>&1 | tee ${coassembly_dir}/atlas_run_${log_code}.log
 
 }
 
@@ -387,11 +422,11 @@ function main {
 	run_atlas
 
 	# TODO functions not even started yet...
-	read_map_to_coassemblies
-	bin_coassemblies
+	#read_map_to_coassemblies
+	#bin_coassemblies
 	# TODO can I run ATLAS on these bins for annotation in place of the standard MaxBin ones? Move the MaxBin ones elsewhere? (Or don't even generate them -- just have ATLAS stop before this point, then resume it)
 
-	finish_atlas # to finish annotation on bins as stated above.
+	#finish_atlas # to finish annotation on bins as stated above.
 		
 
 	end_time=$(date)	
