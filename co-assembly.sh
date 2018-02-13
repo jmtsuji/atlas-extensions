@@ -246,7 +246,8 @@ function build_yaml {
 	
 	# Make fake samples
 	for name in ${coassembly_names[@]}; do
-		touch ${temp_coassembly_dir}/${name}.fastq.gz
+		touch ${temp_coassembly_dir}/${name}_R1.fastq.gz
+		touch ${temp_coassembly_dir}/${name}_R2.fastq.gz
 	done
 	
 	# Generate config file from fake samples
@@ -295,13 +296,51 @@ function concatenate_pre_assembly {
 			cat ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_QC_R2.fastq.gz >> ${coassembly_dir}/sequence_quality_control/${coassembly_name}_QC_R2.fastq.gz
 			cat ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_QC_se.fastq.gz >> ${coassembly_dir}/sequence_quality_control/${coassembly_name}_QC_se.fastq.gz		
 
-	done
+		done
 
 	# Fix the IFS
 	IFS="$OFS"
 
 	echo ""
 	done
+}
+
+function make_atlas_dirs {
+	# Description: forces ATLAS to think that run QC has already been performed on the provided samples
+	
+	# Make fake samples
+	for sample in ${coassembly_names[@]}; do
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_raw_R1.fastq.gz
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_raw_R2.fastq.gz
+		
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_deduplicated_R1.fastq.gz
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_deduplicated_R2.fastq.gz
+		
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_filtered_R1.fastq.gz
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_filtered_R2.fastq.gz
+		
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_clean_R1.fastq.gz
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_clean_R2.fastq.gz
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_clean_se.fastq.gz
+		
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/PhiX_R1.fastq.gz
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/PhiX_R2.fastq.gz
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/PhiX_se.fastq.gz
+		
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/rRNA_R1.fastq.gz
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/rRNA_R2.fastq.gz
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/rRNA_se.fastq.gz
+		
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_decontamination_reference_stats.txt
+		
+		mkdir -p ${OUTPUT_DIR}/${sample}/logs
+		touch ${OUTPUT_DIR}/${sample}/logs/${sample}_init.log
+		touch ${OUTPUT_DIR}/${sample}/logs/${sample}_deduplicate.log
+		touch ${OUTPUT_DIR}/${sample}/logs/${sample}_quality_filter.log
+		touch ${OUTPUT_DIR}/${sample}/logs/${sample}_decontamination.log
+		
+	done
+
 }
 
 
@@ -317,10 +356,10 @@ function run_atlas {
 	local end_step="sort_munged_blast_hits"
 	
 	# See what all steps of ATLAS would be without actually running ATLAS
-	atlas assemble --jobs ${THREADS} --out-dir ${OUTPUT_DIR} ${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} --dryrun > output/atlas_run_steps_${log_code}.log
+	atlas assemble --jobs ${THREADS} --out-dir ${OUTPUT_DIR} ${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} --dryrun > ${OUTPUT_DIR}/atlas_run_steps_${log_code}.log
 	
 	# Run ATLAS
-	atlas assemble --jobs ${THREADS} --out-dir ${OUTPUT_DIR} ${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} 2>&1 | tee output/atlas_run_${log_code}.log
+	atlas assemble --jobs ${THREADS} --out-dir ${OUTPUT_DIR} ${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} 2>&1 | tee ${OUTPUT_DIR}/atlas_run_${log_code}.log
 
 }
 
@@ -336,12 +375,13 @@ function main {
 	get_coassembly_params
 
 	# Generate yaml and exit early, or continue on if yaml exists
-	check_or_build_yaml # TODO
+	check_yaml
 
 	# Get date and time of start
 	start_time=$(date)
 
 	concatenate_pre_assembly
+	make_atlas_dirs
 	run_atlas
 
 	# TODO functions not even started yet...
