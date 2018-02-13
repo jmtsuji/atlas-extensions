@@ -310,6 +310,8 @@ function make_atlas_dirs {
 	
 	# Make fake samples
 	for sample in ${coassembly_names[@]}; do
+		mkdir -p ${OUTPUT_DIR}/${sample}/logs
+		
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_raw_R1.fastq.gz
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_raw_R2.fastq.gz
 		
@@ -319,6 +321,7 @@ function make_atlas_dirs {
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_filtered_R1.fastq.gz
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_filtered_R2.fastq.gz
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_filtered_se.fastq.gz
+		touch ${OUTPUT_DIR}/${sample}/logs/${sample}_quality_filtering_stats.txt
 		
 		mkdir -p ${OUTPUT_DIR}/ref/genome/1 ${OUTPUT_DIR}/logs
 		touch ${OUTPUT_DIR}/ref/genome/1/summary.txt
@@ -337,6 +340,10 @@ function make_atlas_dirs {
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/rRNA_se.fastq.gz
 		
 		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_decontamination_reference_stats.txt
+		
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_QC_R1.fastq.gz
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_QC_R2.fastq.gz
+		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_QC_se.fastq.gz
 		
 	done
 
