@@ -49,32 +49,27 @@ function test_inputs {
 	
 	if [ ! -d $OUTPUT_DIR ]; then
 		echo "ERROR: Cannot find output directory at '${OUTPUT_DIR}'. Exiting..."
-		quit 1
+		exit 1
 	fi
 	
 	if [ ! -d $DATABASE_DIR ]; then
 		echo "ERROR: Cannot find database directory at '${DATABASE_DIR}'. Exiting..."
-		quit 1
-	fi
-	
-	if [ ! -f $CONFIG_FILEPATH ]; then
-		echo "ERROR: Cannot find ATLAS config file at '${CONFIG_FILEPATH}'. Exiting..."
-		quit 1
+		exit 1
 	fi
 	
 	if [ ! -f $COASSEMBLY_GUIDE_FILEPATH ]; then
 		echo "ERROR: Cannot find coassembly guide file at ${COASSEMBLY_GUIDE_FILEPATH}. Exiting..."
-		quit 1
+		exit 1
 	fi
 	
 	if [ ! -d $ASSEMBLY_BINARIES ]; then
 		echo "ERROR: Cannot find conda binaries for assembly in ${ASSEMBLY_BINARIES}. Have you run ATLAS normally yet? Exiting..."
-		quit 1
+		exit 1
 	fi
 
 	if [ ! -d $BINNING_BINARIES ]; then
 		echo "ERROR: Cannot find conda binaries for genome binning in ${BINNING_BINARIES}. Have you run ATLAS normally yet? Exiting..."
-		quit 1
+		exit 1
 	fi
 		
 }
@@ -177,8 +172,10 @@ function check_coassembly_dirs {
 	# Local params: none
 	# Return: none
 	
+	mkdir -p ${OUTPUT_DIR}/coassembly
+	
 	for name in ${coassembly_names[@]}; do
-		local coassembly_dir="${OUTPUT_DIR}/${name}"
+		local coassembly_dir="${OUTPUT_DIR}/coassembly/${name}"
 		
 		if [ -d ${coassembly_dir} ]; then
 			echo "ERROR: found pre-existing output co-assembly directory ${coassembly_dir}. Please delete before starting. Job terminating."
@@ -234,12 +231,13 @@ function build_yaml {
 	# Local params: none
 	# Return: writes .yaml to disk
 	
-	local temp_coassembly_dir="${OUTPUT_DIR}/coassembly_tmp"
+	local temp_coassembly_dir="${OUTPUT_DIR}/coassembly/inputs_tmp"
 	
 	# Check if temp directory already exists (so that the script does not erase it later):
 	if [ ! -d ${temp_coassembly_dir} ]; then
 		local erase_temp_coassembly_dir="TRUE"
 	fi
+	# TODO perform this check later??
 	
 	# Make temporary directory for fake samples from which to generate the config file
 	mkdir -p ${temp_coassembly_dir}
@@ -252,11 +250,6 @@ function build_yaml {
 	
 	# Generate config file from fake samples
 	atlas make-config --database-dir ${DATABASE_DIR} ${CONFIG_FILEPATH} ${temp_coassembly_dir}
-	
-	# Cleanup
-	if [ $erase_temp_coassembly_dir == "TRUE" ]; then
-		rm -r ${temp_coassembly_dir}
-	fi
 	
 }
 
@@ -277,7 +270,7 @@ function concatenate_pre_assembly {
 		local coassembly_name=${coassembly_names[${j}]}
 
 		# Make output directory for that coassembly sample
-		local coassembly_dir="${OUTPUT_DIR}/${coassembly_name}"
+		local coassembly_dir="${OUTPUT_DIR}/coassembly/${coassembly_name}"
 		mkdir -p ${coassembly_dir}/sequence_quality_control
 
 		# Temporarily change the internal fields separator (IFS) to parse comma separators. See Vince Buffalo's "Bioinformatics Data Skills" (1st Ed.) chapter 12, pg 407 and corresponding Github page README at https://github.com/vsbuffalo/bds-files/tree/master/chapter-12-pipelines (accessed Nov 19, 2017)
@@ -308,42 +301,44 @@ function concatenate_pre_assembly {
 function make_atlas_dirs {
 	# Description: forces ATLAS to think that run QC has already been performed on the provided samples
 	
+	local coassembly_dir="${OUTPUT_DIR}/coassembly"
+	
 	# Make fake samples
 	for sample in ${coassembly_names[@]}; do
-		mkdir -p ${OUTPUT_DIR}/${sample}/logs
+		mkdir -p ${coassembly_dir}/${sample}/logs ${coassembly_dir}/ref/genome/1 ${coassembly_dir}/logs
 		
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_raw_R1.fastq.gz
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_raw_R2.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_raw_R1.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_raw_R2.fastq.gz
 		
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_deduplicated_R1.fastq.gz
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_deduplicated_R2.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_deduplicated_R1.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_deduplicated_R2.fastq.gz
 		
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_filtered_R1.fastq.gz
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_filtered_R2.fastq.gz
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_filtered_se.fastq.gz
-		touch ${OUTPUT_DIR}/${sample}/logs/${sample}_quality_filtering_stats.txt
 		
-		mkdir -p ${OUTPUT_DIR}/ref/genome/1 ${OUTPUT_DIR}/logs
-		touch ${OUTPUT_DIR}/ref/genome/1/summary.txt
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_filtered_R1.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_filtered_R2.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_filtered_se.fastq.gz
+		touch ${coassembly_dir}/${sample}/logs/${sample}_quality_filtering_stats.txt
 		
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_clean_R1.fastq.gz
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_clean_R2.fastq.gz
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_clean_se.fastq.gz
+		touch ${coassembly_dir}/ref/genome/1/summary.txt
 		
-		mkdir -p ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/PhiX_R1.fastq.gz
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/PhiX_R2.fastq.gz
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/PhiX_se.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_clean_R1.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_clean_R2.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_clean_se.fastq.gz
 		
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/rRNA_R1.fastq.gz
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/rRNA_R2.fastq.gz
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/contaminants/rRNA_se.fastq.gz
+		mkdir -p ${coassembly_dir}/${sample}/sequence_quality_control/contaminants
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/contaminants/PhiX_R1.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/contaminants/PhiX_R2.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/contaminants/PhiX_se.fastq.gz
 		
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_decontamination_reference_stats.txt
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/contaminants/rRNA_R1.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/contaminants/rRNA_R2.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/contaminants/rRNA_se.fastq.gz
 		
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_QC_R1.fastq.gz
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_QC_R2.fastq.gz
-		touch ${OUTPUT_DIR}/${sample}/sequence_quality_control/${sample}_QC_se.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_decontamination_reference_stats.txt
+		
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_QC_R1.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_QC_R2.fastq.gz
+		touch ${coassembly_dir}/${sample}/sequence_quality_control/${sample}_QC_se.fastq.gz
 		
 	done
 
@@ -355,6 +350,7 @@ function run_atlas {
 	# Description: runs standard ATLAS pipeline, starting from assembly, for coassembly files
 	# TODO: make sure this strategy actually works!!!
 	
+	local coassembly_dir="${OUTPUT_DIR}/coassembly"
 	local log_code=$(date '+%y%m%d_%H%M')
 	
 	# Define the step to force ATLAS to start from and end at
@@ -362,10 +358,10 @@ function run_atlas {
 	local end_step="sort_munged_blast_hits"
 	
 	# See what all steps of ATLAS would be without actually running ATLAS
-	atlas assemble --jobs ${THREADS} --out-dir ${OUTPUT_DIR} ${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} --dryrun > ${OUTPUT_DIR}/atlas_run_steps_${log_code}.log
+	atlas assemble --jobs ${THREADS} --out-dir ${coassembly_dir} ${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} --dryrun > ${coassembly_dir}/atlas_run_steps_${log_code}.log
 	
 	# Run ATLAS
-	atlas assemble --jobs ${THREADS} --out-dir ${OUTPUT_DIR} ${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} 2>&1 | tee ${OUTPUT_DIR}/atlas_run_${log_code}.log
+	atlas assemble --jobs ${THREADS} --out-dir ${coassembly_dir} ${CONFIG_FILEPATH} --force ${start_step} --until ${end_step} 2>&1 | tee ${coassembly_dir}/atlas_run_${log_code}.log
 
 }
 
