@@ -413,16 +413,44 @@ function find_atlas_binaries {
 
 }
 
-
+# TODO
 function read_map_to_coassemblies {
 	# Description: runs standard ATLAS pipeline, starting from assembly and finishing before read mapping, for coassembly files
 	# GLOBAL Params: OUTPUT_DIR; THREADS; CONFIG_FILEPATH
 	# Local params: none
 	# Return: writes files/directories to disk
 
+	local coassembly_dir="${OUTPUT_DIR}/coassembly"
+
 	find_atlas_binaries # generates new variables with prefixes for binaries; see above
 
+	for coassembly in ${coassembly_names[@]}; do
+	# Get names of mapping samples from ${read_mapping_samples} using IFS change; call mapping_names
 	
+		for mapping in ${mapping_names[@]}; do
+
+mkdir -p ${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter
+mkdir -p ${coassembly_dir}/${coassembly}/multi_mapping/logs
+mkdir -p ${coassembly_dir}/${coassembly}/multi_mapping/contig_stats
+mkdir -p ${coassembly_dir}/tmp
+MEMORY=32 #TODO
+TMPDIR=${coassembly_dir}/tmp # TODO
+
+	# rule align_reads_to_final_contigs
+	${bbwrap_path}/bbwrap.sh nodisk=t ref=${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta in1=${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_R1.fastq.gz,${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_se.fastq.gz in2=${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_R2.fastq.gz,null trimreaddescriptions=t outm=${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam outu1=${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_R1.fastq.gz,${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_se.fastq.gz outu2=${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_R2.fastq.gz,null threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${coassembly_dir}/${coassembly}/multi_mapping/logs/contig_coverage_stats_${mapping}.log
+
+
+	# rule pileup
+	${pileup_path}/pileup.sh ref=${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta in=${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam threads=${THREADS} -Xmx${MEMORY}G covstats=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_stats_${mapping}.txt hist=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_histogram_${mapping}.txt basecov=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_base_coverage_${mapping}.txt.gz concise=t physcov=t secondary=f bincov=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_binned_${mapping}.txt 2>> ${coassembly_dir}/${coassembly}/multi_mapping/logs/contig_coverage_stats_${mapping}.log
+
+	# rule convert_sam_to_bam
+mkdir -p ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment/${coassembly}_${mapping}_tmp # TODO - delete later?
+	${samtools_path}/samtools view -@ ${THREADS} -bSh1 ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam | ${samtools_path}/samtools sort -m 1536M -@ ${THREADS} -T ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment/${coassembly}_${mapping}_tmp -o ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam -O bam -
+# TODO delete temp files and .sam? What is common in ATLAS?
+
+done
+done
+
 
 }
 
