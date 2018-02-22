@@ -291,10 +291,10 @@ function concatenate_pre_assembly {
 
 		done
 
-	# Fix the IFS
-	IFS="$OFS"
+		# Fix the IFS
+		IFS="$OFS"
 
-	echo ""
+		echo ""
 	done
 }
 
@@ -434,6 +434,7 @@ function read_map_to_coassemblies {
 
 	for coassembly in ${coassembly_names[@]}; do
 	# Get names of mapping samples from ${read_mapping_samples} using IFS change; call mapping_names
+	
 	
 		for mapping in ${mapping_names[@]}; do
 
