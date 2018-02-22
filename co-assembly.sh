@@ -515,6 +515,7 @@ function bin_coassemblies {
 	# Manually add additional settings needed for scripts.
 	# TODO - pull these settings (at least MEMORY) from the .yaml file!
 	local ${MINCONTIG}=1000
+	local ${MIN_BIN_SIZE}=200000
 
 
 	for i in $(seq 1 ${#coassembly_names[@]}); do
@@ -549,7 +550,7 @@ function bin_coassemblies {
 		
 		# Run metabat
 		docker run metabat/metabat:latest runMetaBat.sh --minContig ${MINCONTIG} --numThreads ${THREADS} \
---maxP 95 --minS 60 --maxEdges 200 --minCV 1 --minCVSum 1 --minClsSize 200000 --seed 0 --unbinned \
+--maxP 95 --minS 60 --maxEdges 200 --minCV 1 --minCVSum 1 --minClsSize ${MIN_BIN_SIZE} --seed 0 --unbinned \
 ${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta ${bam_filepaths[@]} | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/genomic_binning.log
 		
 		# Reorganize output into ATLAS folder, then delete temporary folder
