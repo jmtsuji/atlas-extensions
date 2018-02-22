@@ -479,7 +479,7 @@ function read_map_to_coassemblies {
 
 
 # # Not needed for now -- running metabat via docker with auto-install (if internet connection is available)
-# TODO long term, find a better solution for this (e.g., conda install)(
+# TODO long term, find a better solution for this (e.g., conda install)... OR at least check that docker is installed.
 
 # function look_for_metabat {
 # 	# Description: checks that metabat (hopefully metabat2) is installed and exits if not
@@ -516,7 +516,6 @@ function bin_coassemblies {
 	# TODO - pull these settings (at least MEMORY) from the .yaml file!
 	local ${MINCONTIG}=1000
 	local ${MIN_BIN_SIZE}=200000
-
 
 	for i in $(seq 1 ${#coassembly_names[@]}); do
 		# Set counter to be based on zero, not one
