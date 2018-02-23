@@ -478,17 +478,29 @@ function read_map_to_coassemblies {
 }
 
 
-# # Not needed for now -- running metabat via docker with auto-install (if internet connection is available)
-# TODO long term, find a better solution for this (e.g., conda install)... OR at least check that docker is installed.
+# TODO long term, find a better solution for this (e.g., conda install) rather than using docker, which requires an internet connection. Also use specific metabat version
+ function look_for_metabat {
+ 	# Description: installs docker to be able to use metabat if not already installed
+ 	# TODO - consider installing metabat if not there; also consider generating metabat_path variable
+ 	# GLOBAL Params: OUTPUT_DIR; #TODO
+ 	# Local params: none
+ 	# Return: none
 
-# function look_for_metabat {
-# 	# Description: checks that metabat (hopefully metabat2) is installed and exits if not
-# 	# TODO - consider installing metabat if not there; also consider generating metabat_path variable
-# 	# GLOBAL Params: OUTPUT_DIR; #TODO
-# 	# Local params: none
-# 	# Return: none
-# 	
-# }
+	# TODO CHECK if docker isn't installed!
+	# TODO assumes root user!
+if 
+
+apt-get remove -y docker docker-engine docker.io
+apt-get update
+apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg2
+curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "$ID")/gpg | apt-key add -
+add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") $(. /etc/os-release; echo "$VERSION" | cut -d "(" -f 2 | cut -d ")" -f 1) stable"
+apt-get update
+apt-get install -y docker-ce
+
+
+ 	
+ }
 
 
 function organize_new_bins {
