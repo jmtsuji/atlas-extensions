@@ -408,7 +408,10 @@ function find_atlas_binaries {
 	pileup_path=$(find ${coassembly_dir}/.snakemake/conda -name "pileup.sh" | grep "/bin/pileup.sh")
 	samtools_path=$(find ${coassembly_dir}/.snakemake/conda -name "samtools" | grep "/bin/samtools")
 	
-	# TODO - add sanity check to make sure path was found and that only a single path was found.
+	# TODO - add sanity check to make sure path was found and that only a single path was found. For now, just state what the paths were.
+	echo "bbwrap_path: ${bbwrap_path}"
+	echo "pileup_path: ${pileup_path}"
+	echo "samtools_path: ${samtools_path}"
 	
 }
 
@@ -459,17 +462,27 @@ function read_map_to_coassemblies {
 		for mapping in ${mapping_sample_IDs[@]}; do
 			# TODO - pull more settings from .yaml file (these are FIXED right now)
 
-			# rule align_reads_to_final_contigs
-			${bbwrap_path} nodisk=t ref=${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta in1=${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_R1.fastq.gz,${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_se.fastq.gz in2=${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_R2.fastq.gz,null trimreaddescriptions=t outm=${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam outu1=${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_R1.fastq.gz,${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_se.fastq.gz outu2=${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_R2.fastq.gz,null threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${coassembly_dir}/${coassembly}/multi_mapping/logs/contig_coverage_stats_${mapping}.log
+			echo "rule align_reads_to_final_contigs (${mapping}):"
+			local command=$(echo "${bbwrap_path} nodisk=t ref=${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta in1=${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_R1.fastq.gz,${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_se.fastq.gz in2=${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_R2.fastq.gz,null trimreaddescriptions=t outm=${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam outu1=${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_R1.fastq.gz,${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_se.fastq.gz outu2=${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_R2.fastq.gz,null threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${coassembly_dir}/${coassembly}/multi_mapping/logs/contig_coverage_stats_${mapping}.log")
+			echo $command
+			$command
+			echo ""
 
-			# rule pileup
-			${pileup_path} ref=${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta in=${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam threads=${THREADS} -Xmx${MEMORY}G covstats=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_stats_${mapping}.txt hist=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_histogram_${mapping}.txt basecov=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_base_coverage_${mapping}.txt.gz concise=t physcov=t secondary=f bincov=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_binned_${mapping}.txt 2>> ${coassembly_dir}/${coassembly}/multi_mapping/logs/contig_coverage_stats_${mapping}.log
+			echo "rule pileup (${mapping}):"
+			local command=$(echo "${pileup_path} ref=${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta in=${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam threads=${THREADS} -Xmx${MEMORY}G covstats=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_stats_${mapping}.txt hist=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_histogram_${mapping}.txt basecov=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_base_coverage_${mapping}.txt.gz concise=t physcov=t secondary=f bincov=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_binned_${mapping}.txt 2>> ${coassembly_dir}/${coassembly}/multi_mapping/logs/contig_coverage_stats_${mapping}.log")
+			echo $command
+			$command
+			echo ""
 
-			# rule convert_sam_to_bam
+			echo "rule convert_sam_to_bam (${mapping}):"
 			mkdir -p ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment/${coassembly}_${mapping}_tmp # TODO - delete later?
-			${samtools_path} view -@ ${THREADS} -bSh1 ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam | ${samtools_path}/samtools sort -m 1536M -@ ${THREADS} -T ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment/${coassembly}_${mapping}_tmp -o ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam -O bam -
+			local command=$(echo "${samtools_path} view -@ ${THREADS} -bSh1 ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam | ${samtools_path}/samtools sort -m 1536M -@ ${THREADS} -T ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment/${coassembly}_${mapping}_tmp -o ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam -O bam -")
+			echo $command
+			$command
+
 			# TODO delete temp files? What is done in ATLAS?
 			rm ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam
+			echo ""
 
 		done
 	
