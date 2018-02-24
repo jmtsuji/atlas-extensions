@@ -49,9 +49,9 @@ tar -xvzf master.tar.gz && rm master.tar.gz
 cd berkeleylab-metabat-*
 
 # Temporarily allow for unset variables in case BOOST_ROOT is null
-set +e
+set +u
 scons install PREFIX=$HOME [BOOST_ROOT=$BOOST_ROOT]
-set -e
+set -u
 
 # Get path of the install directory
 full_name=$(find ${metabat_dir} -name "berkeleylab-metabat-*" -type d)
