@@ -527,6 +527,11 @@ function organize_new_bins {
 		# Make summary file expected from Maxbin2
 		touch ${coassembly_dir}/${coassembly}/genomic_bins/${coassembly}.summary
 
+		# Make logs and benchmarks
+		mkdir -p ${coassembly_dir}/logs/benchmarks/maxbin2
+		touch ${coassembly_dir}/logs/benchmarks/maxbin2/${coassembly}.txt
+		touch ${coassembly_dir}/${coassembly}/logs/maxbin2.log
+
 	done
 
 }
