@@ -19,7 +19,10 @@ if [ $# == 0 ]
     printf "Usage: $(basename $0) install_directory\n\n"
     printf "Usage details:\n"
     printf "1. install_directory: Path to the base directory where metabat will be installed. The binaries will be saved in a subdirectory of the base directory called 'berkeleylab-metabat-*' (* depends on the latest version of metabat).\n\n"
-    printf "Install dependencies: note that conda must be installed.\n\n"
+    printf "Install dependencies: apt; an internet connection.\n\n"
+    printf "Final notes:\n"
+    printf "* Installs dependency packages GLOBALLY via apt -- careful!"
+    printf "* This script may also work for other linux distro's, but this has not been tested.\n\n"
     exit 1
 fi
 # Using printf: http://stackoverflow.com/a/8467449 (accessed Feb 21, 2017)
@@ -38,12 +41,12 @@ apt-get update && apt-get install -y libboost-all-dev zlib1g-dev scons build-ess
 # Assuming python already there...
 # conda install -y -c bioconda samtools # maybe this isn't needed?
 
-metabat_dir=${INSTALL_DIR}
+metabat_dir=$(realpath ${INSTALL_DIR})
 mkdir -p ${metabat_dir}
 wget -P ${metabat_dir} https://bitbucket.org/berkeleylab/metabat/get/master.tar.gz
 cd ${metabat_dir}
-tar -xvzf ${metabat_dir}/master.tar.gz && rm ${metabat_dir}/master.tar.gz
-cd ${metabat_dir}/berkeleylab-metabat-*
+tar -xvzf master.tar.gz && rm master.tar.gz
+cd berkeleylab-metabat-*
 
 # Temporarily allow for unset variables in case BOOST_ROOT is null
 set +e
