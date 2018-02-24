@@ -412,6 +412,7 @@ function find_atlas_binaries {
 	echo "bbwrap_path: ${bbwrap_path}"
 	echo "pileup_path: ${pileup_path}"
 	echo "samtools_path: ${samtools_path}"
+	echo ""
 	
 }
 
@@ -507,6 +508,7 @@ function find_metabat_binaries {
 	# TODO - add sanity check to make sure path was found and that only a single path was found. For now, just state what the paths were.
 	echo "metabat_path: ${metabat_path}"
 	echo "jgi_summ_path: ${jgi_summ_path}"
+	echo ""
  	
 }
 
@@ -535,8 +537,8 @@ function bin_coassemblies {
 	
 	# Manually add additional settings needed for scripts.
 	# TODO - pull these settings (at least MEMORY) from the .yaml file!
-	local ${MINCONTIG}=1000
-	local ${MIN_BIN_SIZE}=200000
+	local MINCONTIG=1000
+	local MIN_BIN_SIZE=200000
 
 	for i in $(seq 1 ${#coassembly_names[@]}); do
 		# Set counter to be based on zero, not one
@@ -562,7 +564,7 @@ function bin_coassemblies {
 		echo "${coassembly}"
 		
 		# Build array of BAM file locations - iteratively add each filepath
-		local bam_filepaths=($(echo ""))	
+		local bam_filepaths=($(echo ""))
 			
 		for mapping in ${mapping_sample_IDs[@]}; do
 			local bam_filepaths=($(echo "${bam_filepaths[@]} ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam"))
@@ -570,13 +572,13 @@ function bin_coassemblies {
 		
 		# Run metabat
 		echo "rule jgi_summarize_bam_contig_depths:"
-		command=$(echo "${jgi_summ_path} --outputDepth ${bin_output_dir}/${coassembly}_depth.txt ${bam_filepaths[@]}")
+		local command=$(echo "${jgi_summ_path} --outputDepth ${bin_output_dir}/${coassembly}_depth.txt ${bam_filepaths[@]} | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/jgi_summarize_bam_contig_depths.log")
 		echo $command
 		$command
 		echo ""
 
 		echo "rule run_metabat2:"
-		command=$(echo "${metabat_path} -i ${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta -o ${bin_output_dir}/${coassembly} -a ${bin_output_dir}/${coassembly}_depth.txt --minContig ${MINCONTIG} --numThreads ${THREADS} --maxP 95 --minS 60 --maxEdges 200 --minCV 1 --minCVSum 1 --minClsSize ${MIN_BIN_SIZE} --seed 0 --unbinned | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/genomic_binning.log")
+		local command=$(echo "${metabat_path} -i ${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta -o ${bin_output_dir}/${coassembly} -a ${bin_output_dir}/${coassembly}_depth.txt --minContig ${MINCONTIG} --numThreads ${THREADS} --maxP 95 --minS 60 --maxEdges 200 --minCV 1 --minCVSum 1 --minClsSize ${MIN_BIN_SIZE} --seed 0 --unbinned | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/genomic_binning.log")
 		echo $command
 		$command
 		echo""
