@@ -16,7 +16,7 @@ script_version="1.0.22r1" # to match ATLAS version it is designed to work with
 # If no input is provided, exit out and provide help
 if [ $# == 0 ]
     then
-    printf "$(basename $0): ______.\n"
+    printf "$(basename $0): Runs coassemblies and differential abundance binning after completing a standard ATLAS run. Early development version.\n"
     printf "Version: ${script_version}\n"
     printf "Contact Jackson M. Tsuji (jackson.tsuji@uwaterloo.ca) for bug reports or feature requests.\n\n"
     printf "Usage: $(basename $0) output_dir database_dir config_filepath coassembly_guide_filepath threads\n\n"
@@ -36,12 +36,7 @@ OUTPUT_DIR=$1
 DATABASE_DIR=$2
 CONFIG_FILEPATH=$3
 COASSEMBLY_GUIDE_FILEPATH=$4
-THREADS=14 # TODO Eventually need to set this to user input
-
-# Constants
-ASSEMBLY_BINARIES="${OUTPUT_DIR}/.snakemake/conda/ccef13c9/bin"
-BINNING_BINARIES="${OUTPUT_DIR}/.snakemake/conda/a6a01fdc/bin"
-
+THREADS=$5
 
 function test_inputs {
 	# Description: tests that provided folders and files exist in the proper configuration
