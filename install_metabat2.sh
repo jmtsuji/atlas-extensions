@@ -31,24 +31,27 @@ fi
 # Set variables from user input:
 INSTALL_DIR=$1
 
-echo "Installing metabat2..."
-
 start_time=$(date)
-starting_dir=$PWD
+
+echo "Running $(basename $0) on ${start_time}. Input: install_directory = '${INSTALL_DIR}'."
 
 # Install dependencies
-apt-get update && apt-get install -y libboost-all-dev zlib1g-dev scons build-essential git curl libncurses5-dev # gcc binutils
-# Assuming python already there...
-# conda install -y -c bioconda samtools # maybe this isn't needed?
+echo "Updating apt..."
+apt-get update > /dev/null
+echo "Installing dependencies..." # gcc binutils
+apt-get install -y libboost-all-dev zlib1g-dev scons build-essential git curl libncurses5-dev > /dev/null
+# conda install -y -c bioconda samtools # Seems like this isn't needed.
 
+echo "Downloading metabats..."
 metabat_dir=$(realpath ${INSTALL_DIR})
 mkdir -p ${metabat_dir}
 wget -P ${metabat_dir} https://bitbucket.org/berkeleylab/metabat/get/master.tar.gz
 cd ${metabat_dir}
-tar -xvzf master.tar.gz && rm master.tar.gz
+tar -xzf master.tar.gz && rm master.tar.gz
 cd berkeleylab-metabat-*
 
 # Temporarily allow for unset variables in case BOOST_ROOT is null
+echo "Installing and testing metabat2..."
 set +u
 scons install PREFIX=$HOME [BOOST_ROOT=$BOOST_ROOT]
 set -u
@@ -56,9 +59,11 @@ set -u
 # Get path of the install directory
 full_name=$(find ${metabat_dir} -name "berkeleylab-metabat-*" -type d)
 
-cd $starting_dir
 end_time=$(date)
 
-echo "Done installing to '${full_name}'"
+echo ""
+echo ""
+echo "Done installing metabat2 to '${full_name}'"
 echo "Started at ${start_time} and finished at ${end_time}."
+echo ""
 
