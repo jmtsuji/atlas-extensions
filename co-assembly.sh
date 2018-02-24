@@ -384,7 +384,8 @@ function run_atlas_assemble {
 	local log_code=$(date '+%y%m%d_%H%M')
 	
 	# Define the step to force ATLAS to start from and end at
-	local end_step="sort_munged_blast_hits"
+	# local end_step="sort_munged_blast_hits"
+	local end_step="make_maxbin_abundance_file"
 	
 	# See what all steps of ATLAS would be without actually running ATLAS
 	atlas assemble --jobs ${THREADS} --out-dir ${coassembly_dir} ${CONFIG_FILEPATH} --until ${end_step} --dryrun > ${coassembly_dir}/atlas_run_steps_${log_code}.log 2>&1
@@ -467,7 +468,8 @@ function read_map_to_coassemblies {
 			# rule convert_sam_to_bam
 			mkdir -p ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment/${coassembly}_${mapping}_tmp # TODO - delete later?
 			${samtools_path} view -@ ${THREADS} -bSh1 ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam | ${samtools_path}/samtools sort -m 1536M -@ ${THREADS} -T ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment/${coassembly}_${mapping}_tmp -o ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam -O bam -
-			# TODO delete temp files and .sam? What is done in ATLAS?
+			# TODO delete temp files? What is done in ATLAS?
+			rm ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam
 
 		done
 	
