@@ -415,7 +415,7 @@ function find_atlas_binaries {
 	
 }
 
-# TODO - test that this function works, especially IFS
+
 function read_map_to_coassemblies {
 	# Description: iteratively maps read_mapping_samples to coassemblies like done within ATLAS
 	# GLOBAL Params: OUTPUT_DIR; THREADS; coassembly_names (array); read_mapping_samples (array)
@@ -430,7 +430,7 @@ function read_map_to_coassemblies {
 
 	# Manually add additional settings needed for scripts.
 	# TODO - pull these settings (at least MEMORY) from the .yaml file!
-	local MEMORY=32 #TODO
+	local MEMORY=65 #TODO
 	local TMPDIR=${coassembly_dir}/tmp
 	mkdir -p ${coassembly_dir}/tmp
 
@@ -456,7 +456,7 @@ function read_map_to_coassemblies {
 		# Fix the IFS
 		IFS="$OFS"
 		
-		echo "${coassembly_name}: ${assembly_sample_IDs[@]}"
+		echo "${coassembly_name}: ${mapping_sample_IDs[@]}"
 		
 		# Read map iteratively for each mapping ID
 		for mapping in ${mapping_sample_IDs[@]}; do
@@ -476,7 +476,7 @@ function read_map_to_coassemblies {
 
 			echo "rule convert_sam_to_bam (${mapping}):"
 			mkdir -p ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment/${coassembly}_${mapping}_tmp # TODO - delete later?
-			local command=$(echo "${samtools_path} view -@ ${THREADS} -bSh1 ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam | ${samtools_path}/samtools sort -m 1536M -@ ${THREADS} -T ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment/${coassembly}_${mapping}_tmp -o ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam -O bam -")
+			local command=$(echo "${samtools_path} view -@ ${THREADS} -bSh1 ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam | ${samtools_path} sort -m 1536M -@ ${THREADS} -T ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment/${coassembly}_${mapping}_tmp -o ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam -O bam -")
 			echo $command
 			$command
 
