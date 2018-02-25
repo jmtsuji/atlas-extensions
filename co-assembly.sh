@@ -464,7 +464,7 @@ function read_map_to_coassemblies {
 		# Fix the IFS
 		IFS="$OFS"
 		
-		echo "${coassembly_name}: ${mapping_sample_IDs[@]}"
+		echo "${coassembly}: ${mapping_sample_IDs[@]}"
 		
 		# Read map iteratively for each mapping ID
 		for mapping in ${mapping_sample_IDs[@]}; do
