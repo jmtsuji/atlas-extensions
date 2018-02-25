@@ -295,9 +295,16 @@ function make_atlas_dirs {
 	# Return: writes empty files/directories to disk
 	
 	local coassembly_dir="${OUTPUT_DIR}/coassembly"
+
+	# Re-make fake initial samples in case build_yaml was not run
+	mkdir -p "${coassembly_dir}/inputs_tmp"
 	
 	# Make fake samples, round 1
 	for sample in ${coassembly_names[@]}; do
+		# Re-make fake initial samples in case build_yaml was not run
+		touch ${coassembly_dir}/inputs_tmp/${sample}_R1.fastq.gz
+		touch ${coassembly_dir}/inputs_tmp/${sample}_R2.fastq.gz
+
 		mkdir -p ${coassembly_dir}/${sample}/logs ${coassembly_dir}/${sample}/sequence_quality_control/read_stats
 		mkdir -p ${coassembly_dir}/ref/genome/1 ${coassembly_dir}/ref/index/1
 		mkdir -p ${coassembly_dir}/logs/benchmarks
