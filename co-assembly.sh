@@ -483,8 +483,8 @@ function read_map_to_coassemblies {
 			echo ""
 
 			echo "rule convert_sam_to_bam (${mapping}):"
-			mkdir -p ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment/${coassembly}_${mapping}_tmp # TODO - delete later?
-			local command=$(echo "${samtools_path} view -m 1536M -@ ${THREADS} -bSh1 ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam | ${samtools_path} sort -m 1536M -@ ${THREADS} -T ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment/${coassembly}_${mapping}_tmp -o ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam -O bam -")
+			mkdir -p ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment # TODO - delete later?
+			local command=$(echo "${samtools_path} view -@ ${THREADS} -bSh1 ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam | ${samtools_path} sort -m 1536M -@ ${THREADS} -T ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment/${coassembly}_${mapping}_tmp -o ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam -O bam -")
 			echo $command
 			$command
 
