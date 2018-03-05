@@ -37,10 +37,10 @@ fi
 # Test for empty variable: Bioinformatics Data Skills Ch. 12 pg 403-404, and http://www.tldp.org/LDP/Bash-Beginners-Guide/html/sect_09_07.html and http://stackoverflow.com/a/2428006 (both accessed Feb 21, 2017)
 
 # Set variables from user input:
-OUTPUT_DIR=$(realpath $1)
-DATABASE_DIR=$(realpath $2)
-CONFIG_FILEPATH=$(realpath $3)
-COASSEMBLY_GUIDE_FILEPATH=$(realpath $4)
+OUTPUT_DIR=$1
+DATABASE_DIR=$2
+CONFIG_FILEPATH=$3
+COASSEMBLY_GUIDE_FILEPATH=$4
 THREADS=$5
 
 function test_inputs {
