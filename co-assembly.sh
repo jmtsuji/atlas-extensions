@@ -484,12 +484,20 @@ function read_map_to_coassemblies {
 
 			echo "rule convert_sam_to_bam (${mapping}):"
 			# mkdir -p ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment # TODO - delete later?
-			local command=$(echo "${samtools_path} view -@ ${THREADS} -u ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam | ${samtools_path} sort -m 4G -@ ${THREADS} -T ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_tmp -o ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam -O bam")
+			local command=$(echo "${samtools_path} view -@ ${THREADS} -u ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam > ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_unsorted.bam")
+			echo $command
+			$command
+			
+			local command=$(echo "${samtools_path} index ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_unsorted.bam")
+			echo $command
+			$command
+			
+			local command=$(echo "${samtools_path} sort -m 4G -@ ${THREADS} -T ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_tmp -O bam ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_unsorted.bam > ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
 			echo $command
 			$command
 
 			# TODO delete temp files? What is done in ATLAS?
-			rm ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam
+			rm ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_unsorted.bam
 			echo ""
 
 		done
