@@ -381,6 +381,28 @@ function make_atlas_dirs {
 }
 
 
+function move_maxbin_output {
+	# Description: after running standard ATLAS pipeline, moves the MaxBin coassembly files out of the standard output directory to make space for metaBAT files later
+	# GLOBAL Params: OUTPUT_DIR; THREADS; CONFIG_FILEPATH
+	# Local params: none
+	# Return: writes files/directories to disk
+	
+	local coassembly_dir="${OUTPUT_DIR}/coassembly"
+	
+	echo "Cleaning up MaxBin output to prepare for coassembly..."
+	
+	for coassembly in ${coassembly_names[@]}; do
+			
+			mkdir -p ${coassembly_dir}/${coassembly}/genomic_bins/maxbin_OLD
+			mv ${coassembly_dir}/${coassembly}/genomic_bins/${coassembly}.*.fasta ${coassembly_dir}/${coassembly}/genomic_bins/maxbin_OLD
+			
+			# TODO also move .noclass, .summary, .tooshort -- or at least copy?
+			
+	done
+	
+}
+
+
 function run_atlas_assemble {
 	# Description: runs standard ATLAS pipeline, starting from assembly and finishing before read mapping, for coassembly files
 	# GLOBAL Params: OUTPUT_DIR; THREADS; CONFIG_FILEPATH
@@ -391,14 +413,19 @@ function run_atlas_assemble {
 	local log_code=$(date '+%y%m%d_%H%M')
 	
 	# Define the step to force ATLAS to start from and end at
-	# local end_step="sort_munged_blast_hits"
-	local end_step="make_maxbin_abundance_file"
+	# local end_step="make_maxbin_abundance_file"
+	local end_step="run_maxbin"
+	
+	echo "Running first round of ATLAS up to '${end_step}' step..."
 	
 	# See what all steps of ATLAS would be without actually running ATLAS
 	atlas assemble --jobs ${THREADS} --out-dir ${coassembly_dir} ${CONFIG_FILEPATH} --until ${end_step} --dryrun > ${coassembly_dir}/atlas_run_steps_${log_code}.log 2>&1
 	
 	# Run ATLAS
 	atlas assemble --jobs ${THREADS} --out-dir ${coassembly_dir} ${CONFIG_FILEPATH} --until ${end_step} 2>&1 | tee ${coassembly_dir}/atlas_run_${log_code}.log
+
+	# Clean up
+	move_maxbin_output
 
 }
 
