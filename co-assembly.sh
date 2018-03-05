@@ -484,7 +484,7 @@ function read_map_to_coassemblies {
 
 			echo "rule convert_sam_to_bam (${mapping}):"
 			# mkdir -p ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment # TODO - delete later?
-			local command=$(echo "${samtools_path} view -@ ${THREADS} -u ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam > ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_unsorted.bam")
+			local command=$(echo "${samtools_path} view -@ ${THREADS} -b ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam > ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_unsorted.bam")
 			echo $command
 			$command
 			
@@ -492,7 +492,7 @@ function read_map_to_coassemblies {
 			echo $command
 			$command
 			
-			local command=$(echo "${samtools_path} sort -m 4G -@ ${THREADS} -T ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_tmp -O bam ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_unsorted.bam > ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
+			local command=$(echo "${samtools_path} sort -m 4G -@ ${THREADS} -T ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_tmp -O bam -o ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_unsorted.bam")
 			echo $command
 			$command
 
