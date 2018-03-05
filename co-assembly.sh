@@ -471,33 +471,25 @@ function read_map_to_coassemblies {
 			# TODO - pull more settings from .yaml file (these are FIXED right now)
 
 			echo "rule align_reads_to_final_contigs (${mapping}):"
-			local command=$(echo "${bbwrap_path} nodisk=t ref=${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta in1=${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_R1.fastq.gz,${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_se.fastq.gz in2=${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_R2.fastq.gz,null trimreaddescriptions=t outm=${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam outu1=${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_R1.fastq.gz,${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_se.fastq.gz outu2=${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_R2.fastq.gz,null threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${coassembly_dir}/${coassembly}/multi_mapping/logs/contig_coverage_stats_${mapping}.log")
-			echo $command
-			$command
+			echo "${bbwrap_path} nodisk=t ref=${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta in1=${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_R1.fastq.gz,${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_se.fastq.gz in2=${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_R2.fastq.gz,null trimreaddescriptions=t outm=${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam outu1=${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_R1.fastq.gz,${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_se.fastq.gz outu2=${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_R2.fastq.gz,null threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${coassembly_dir}/${coassembly}/multi_mapping/logs/contig_coverage_stats_${mapping}.log"
+			echo ""
+			${bbwrap_path} nodisk=t ref=${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta in1=${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_R1.fastq.gz,${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_se.fastq.gz in2=${OUTPUT_DIR}/${mapping}/sequence_quality_control/${mapping}_QC_R2.fastq.gz,null trimreaddescriptions=t outm=${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam outu1=${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_R1.fastq.gz,${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_se.fastq.gz outu2=${coassembly_dir}/${coassembly}/multi_mapping/unmapped_post_filter/${mapping}_unmapped_R2.fastq.gz,null threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${coassembly_dir}/${coassembly}/multi_mapping/logs/contig_coverage_stats_${mapping}.log
 			echo ""
 
 			echo "rule pileup (${mapping}):"
-			local command=$(echo "${pileup_path} ref=${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta in=${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam threads=${THREADS} -Xmx${MEMORY}G covstats=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_stats_${mapping}.txt hist=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_histogram_${mapping}.txt basecov=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_base_coverage_${mapping}.txt.gz concise=t physcov=t secondary=f bincov=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_binned_${mapping}.txt 2>> ${coassembly_dir}/${coassembly}/multi_mapping/logs/contig_coverage_stats_${mapping}.log")
-			echo $command
-			$command
+			echo "${pileup_path} ref=${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta in=${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam threads=${THREADS} -Xmx${MEMORY}G covstats=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_stats_${mapping}.txt hist=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_histogram_${mapping}.txt basecov=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_base_coverage_${mapping}.txt.gz concise=t physcov=t secondary=f bincov=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_binned_${mapping}.txt 2>> ${coassembly_dir}/${coassembly}/multi_mapping/logs/contig_coverage_stats_${mapping}.log"
+			echo ""
+			${pileup_path} ref=${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta in=${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam threads=${THREADS} -Xmx${MEMORY}G covstats=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_stats_${mapping}.txt hist=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_histogram_${mapping}.txt basecov=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_base_coverage_${mapping}.txt.gz concise=t physcov=t secondary=f bincov=${coassembly_dir}/${coassembly}/multi_mapping/contig_stats/postfilter_coverage_binned_${mapping}.txt 2>> ${coassembly_dir}/${coassembly}/multi_mapping/logs/contig_coverage_stats_${mapping}.log
 			echo ""
 
 			echo "rule convert_sam_to_bam (${mapping}):"
 			# mkdir -p ${coassembly_dir}/tmp/${coassembly}/multi_mapping/alignment # TODO - delete later?
-			local command=$(echo "${samtools_path} view -@ ${THREADS} -b ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam > ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_unsorted.bam")
-			echo $command
-			$command
-			
-			local command=$(echo "${samtools_path} index ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_unsorted.bam")
-			echo $command
-			$command
-			
-			local command=$(echo "${samtools_path} sort -m 4G -@ ${THREADS} -T ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_tmp -O bam -o ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_unsorted.bam")
-			echo $command
-			$command
+			echo "${samtools_path} view -@ ${THREADS} -u ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam | ${samtools_path} sort -m 4G -@ ${THREADS} -T ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_tmp -o ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam -O bam"
+			echo ""
+			${samtools_path} view -@ ${THREADS} -u ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam | ${samtools_path} sort -m 4G -@ ${THREADS} -T ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_tmp -o ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam -O bam
 
 			# TODO delete temp files? What is done in ATLAS?
-			rm ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}_unsorted.bam
+			rm ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.sam
 			echo ""
 
 		done
@@ -601,16 +593,16 @@ function bin_coassemblies {
 		
 		# Run metabat
 		echo "rule jgi_summarize_bam_contig_depths:"
-		local command=$(echo "${jgi_summ_path} --outputDepth ${bin_output_dir}/${coassembly}_depth.txt ${bam_filepaths[@]} | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/jgi_summarize_bam_contig_depths.log")
-		echo $command
-		$command
+		echo "${jgi_summ_path} --outputDepth ${bin_output_dir}/${coassembly}_depth.txt ${bam_filepaths[@]} | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/jgi_summarize_bam_contig_depths.log"
+		echo ""
+		${jgi_summ_path} --outputDepth ${bin_output_dir}/${coassembly}_depth.txt ${bam_filepaths[@]} | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/jgi_summarize_bam_contig_depths.log
 		echo ""
 
 		echo "rule run_metabat2:"
-		local command=$(echo "${metabat_path} -i ${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta -o ${bin_output_dir}/${coassembly} -a ${bin_output_dir}/${coassembly}_depth.txt --minContig ${MINCONTIG} --numThreads ${THREADS} --maxP 95 --minS 60 --maxEdges 200 --minCV 1 --minCVSum 1 --minClsSize ${MIN_BIN_SIZE} --seed 0 --unbinned | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/genomic_binning.log")
-		echo $command
-		$command
-		echo""
+		echo "${metabat_path} -i ${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta -o ${bin_output_dir}/${coassembly} -a ${bin_output_dir}/${coassembly}_depth.txt --minContig ${MINCONTIG} --numThreads ${THREADS} --maxP 95 --minS 60 --maxEdges 200 --minCV 1 --minCVSum 1 --minClsSize ${MIN_BIN_SIZE} --seed 0 --unbinned | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/genomic_binning.log"
+		echo ""
+		${metabat_path} -i ${coassembly_dir}/${coassembly}/${coassembly}_contigs.fasta -o ${bin_output_dir}/${coassembly} -a ${bin_output_dir}/${coassembly}_depth.txt --minContig ${MINCONTIG} --numThreads ${THREADS} --maxP 95 --minS 60 --maxEdges 200 --minCV 1 --minCVSum 1 --minClsSize ${MIN_BIN_SIZE} --seed 0 --unbinned | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/genomic_binning.log
+		echo ""
 	
 		# Reorganize output into ATLAS folder
 		organize_new_bins
