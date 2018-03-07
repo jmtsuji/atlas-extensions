@@ -35,7 +35,8 @@ parse_command_line_input <- function() {
   # -o output TSV filename
   params <- matrix(c('atlas_table', 'a', 1, "character",
                      'featureCounts_table', 'f', 1, "character",
-                     'output_file', 'o', 1, "character"), byrow=TRUE, ncol=4)
+                     'output_file', 'o', 1, "character",
+                     'help', 'h', 2, "character"), byrow=TRUE, ncol=4)
   
   opt <- getopt(params)
   
