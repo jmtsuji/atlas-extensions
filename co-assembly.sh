@@ -711,6 +711,23 @@ function find_featureCounts_binary {
 }
 
 
+function find_merge_multi_mapped_counts_path_binary {
+ 	# Description: finds the path to the relevant merge_multi_mapped_counts_path (R script) binary
+ 	# GLOBAL Params: OUTPUT_DIR
+ 	# Local params: none
+ 	# Return: merge_multi_mapped_counts_path (string)
+	
+	local coassembly_dir="${OUTPUT_DIR}/coassembly"
+	
+	merge_multi_mapped_counts_path=$(find ${coassembly_dir} -name "merge_atlas_multi_mapped_counts.R")
+	
+	# TODO - add sanity check to make sure path was found and that only a single path was found. For now, just state what the paths were.
+	echo "merge_multi_mapped_counts_path: ${merge_multi_mapped_counts_path}"
+	echo ""
+ 	
+}
+
+
 function map_new_feature_counts {
 	# Description: runs featureCounts with multi-mapped files as input and then merges the output featureCounts table with the standard annotations table
 	# GLOBAL Params: OUTPUT_DIR; THREADS; coassembly_names (array); read_mapping_samples (array)
@@ -721,7 +738,7 @@ function map_new_feature_counts {
 	find_featureCounts_binary
 	
 	# Get path to custom R script for merging tables
-	merge_multi_mapped_counts_path="" # TODO
+	find_merge_multi_mapped_counts_path_binary
 	
 	echo "Getting feature counts for individual samples onto coassembly..."
 	local coassembly_dir="${OUTPUT_DIR}/coassembly"
