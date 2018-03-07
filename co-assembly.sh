@@ -412,7 +412,7 @@ function find_atlas_binaries {
 	
 	bbwrap_path=$(find ${coassembly_dir}/.snakemake/conda -name "bbwrap.sh" | grep "/bin/bbwrap.sh")
 	pileup_path=$(find ${coassembly_dir}/.snakemake/conda -name "pileup.sh" | grep "/bin/pileup.sh")
-	samtools_path=$(find ${coassembly_dir}/.snakemake/conda -name "samtools" | grep "/bin/samtools")
+	samtools_path=$(find ${coassembly_dir}/.snakemake/conda -name "samtools" | grep "/bin/samtools" | head -n 1)
 	
 	# TODO - add sanity check to make sure path was found and that only a single path was found. For now, just state what the paths were.
 	echo "bbwrap_path: ${bbwrap_path}"
