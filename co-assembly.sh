@@ -617,9 +617,9 @@ function bin_coassemblies {
 			mapping=${mapping_sample_IDs[${j}]}
 			
 			if [ $i == 1 ]; then
-				local bam_filepaths=("${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
+				bam_filepaths=("${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
 			elif [ $i > 1 ]; then
-				local bam_filepaths+=("${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
+				bam_filepaths+=("${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
 			fi
 			
 		done
@@ -776,9 +776,9 @@ function map_new_feature_counts {
 			mapping=${mapping_sample_IDs[${j}]}
 			
 			if [ $i == 1 ]; then
-				local bam_filepaths=("${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
+				bam_filepaths=("${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
 			elif [ $i > 1 ]; then
-				local bam_filepaths+=("${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
+				bam_filepaths+=("${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
 			fi
 			
 		done
