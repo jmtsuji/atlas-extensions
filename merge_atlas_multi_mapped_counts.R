@@ -22,7 +22,7 @@ if (RUN_COMMAND_LINE == FALSE) {
 ## Load required packages: ##########################
 library(getopt)
 library(plyr)
-library(dplyr)
+suppressMessages(library(dplyr))
 #####################################################
 
 SCRIPT_VERSION <- "1.0.0"
