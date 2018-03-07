@@ -755,9 +755,9 @@ function map_new_feature_counts {
 
 		# Integrate onto annotations table
 		echo "rule add_multi_mapping_feature_counts_to_annotations_table:"
-		echo "${merge_multi_mapped_counts_path} -atlas_table ${coassembly_dir}/${coassembly}/${coassembly}_annotations.txt -featureCounts_table ${fc_output_dir}/${coassembly}_counts.txt -output_file ${coassembly_dir}/${coassembly}/${coassembly}_annotations_multi_mapping.txt | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/add_multi_mapping_feature_counts_to_annotations_table.log"
+		echo "${merge_multi_mapped_counts_path} --atlas_table ${coassembly_dir}/${coassembly}/${coassembly}_annotations.txt --featureCounts_table ${fc_output_dir}/${coassembly}_counts.txt --output_file ${coassembly_dir}/${coassembly}/${coassembly}_annotations_multi_mapping.txt | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/add_multi_mapping_feature_counts_to_annotations_table.log"
 		echo ""
-		${merge_multi_mapped_counts_path} -atlas_table ${coassembly_dir}/${coassembly}/${coassembly}_annotations.txt -featureCounts_table ${fc_output_dir}/${coassembly}_counts.txt -output_file ${coassembly_dir}/${coassembly}/${coassembly}_annotations_multi_mapping.txt | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/add_multi_mapping_feature_counts_to_annotations_table.log
+		${merge_multi_mapped_counts_path} --atlas_table ${coassembly_dir}/${coassembly}/${coassembly}_annotations.txt --featureCounts_table ${fc_output_dir}/${coassembly}_counts.txt --output_file ${coassembly_dir}/${coassembly}/${coassembly}_annotations_multi_mapping.txt | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/add_multi_mapping_feature_counts_to_annotations_table.log
 		echo ""
 	
 	done
