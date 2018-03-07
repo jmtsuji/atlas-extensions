@@ -608,10 +608,20 @@ function bin_coassemblies {
 		echo "${coassembly}"
 		
 		# Build array of BAM file locations - iteratively add each filepath
-		local bam_filepaths=($(echo ""))
+		for i in $(seq 1 ${#mapping_sample_IDs[@]}); do
 			
-		for mapping in ${mapping_sample_IDs[@]}; do
-			local bam_filepaths=($(echo "${bam_filepaths[@]} ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam"))
+			# Set counter to zero-order
+			j=$((${i}-1))
+
+			# Get mapping name
+			mapping=${mapping_sample_IDs[${j}]}
+			
+			if [ $i == 1 ]; then
+				local bam_filepaths=("${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
+			elif [ $i > 1 ]; then
+				local bam_filepaths+=("${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
+			fi
+			
 		done
 		
 		# Run metabat
@@ -740,10 +750,20 @@ function map_new_feature_counts {
 		echo "${coassembly}"
 		
 		# Build array of BAM file locations - iteratively add each filepath
-		local bam_filepaths=($(echo ""))
+		for i in $(seq 1 ${#mapping_sample_IDs[@]}); do
 			
-		for mapping in ${mapping_sample_IDs[@]}; do
-			local bam_filepaths=($(echo "${bam_filepaths[@]} ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam"))
+			# Set counter to zero-order
+			j=$((${i}-1))
+
+			# Get mapping name
+			mapping=${mapping_sample_IDs[${j}]}
+			
+			if [ $i == 1 ]; then
+				local bam_filepaths=("${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
+			elif [ $i > 1 ]; then
+				local bam_filepaths+=("${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam")
+			fi
+			
 		done
 		
 		# Run featureCounts
