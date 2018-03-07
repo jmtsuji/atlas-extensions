@@ -581,7 +581,7 @@ function bin_coassemblies {
 	
 	# Manually add additional settings needed for scripts.
 	# TODO - pull these settings (at least MEMORY) from the .yaml file!
-	local MINCONTIG=1000
+	local MINCONTIG=1500
 	local MIN_BIN_SIZE=200000
 
 	for i in $(seq 1 ${#coassembly_names[@]}); do
