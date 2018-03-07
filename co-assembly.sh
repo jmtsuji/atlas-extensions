@@ -684,6 +684,87 @@ function finish_atlas {
 }
 
 
+function find_featureCounts_binary {
+ 	# Description: finds the path to the relevant featureCounts binary
+ 	# GLOBAL Params: OUTPUT_DIR
+ 	# Local params: none
+ 	# Return: featureCounts_path (string)
+	
+	local coassembly_dir="${OUTPUT_DIR}/coassembly"
+	
+	featureCounts_path=$(find ${coassembly_dir}/.snakemake/conda -name "featureCounts" | grep "/bin/featureCounts")
+	
+	# TODO - add sanity check to make sure path was found and that only a single path was found. For now, just state what the paths were.
+	echo "featureCounts_path: ${featureCounts_path}"
+	echo ""
+ 	
+}
+
+
+function map_new_feature_counts {
+	# Description: runs featureCounts with multi-mapped files as input and then merges the output featureCounts table with the standard annotations table
+	# GLOBAL Params: OUTPUT_DIR; THREADS; coassembly_names (array); read_mapping_samples (array)
+	# Local params: none
+	# Return: writes files/directories to disk; metabat_path; jgi_summ_path
+	
+	# Get featureCounts binary location - generates one new global variable
+	find_featureCounts_binary
+	
+	# Get path to custom R script for merging tables
+	merge_multi_mapped_counts_path="" # TODO
+	
+	echo "Getting feature counts for individual samples onto coassembly..."
+	local coassembly_dir="${OUTPUT_DIR}/coassembly"
+	
+	for i in $(seq 1 ${#coassembly_names[@]}); do
+		# Set counter to be based on zero, not one
+		local j=$((${i}-1))
+		
+		# Get name of coassembly
+		local coassembly=${coassembly_names[${j}]}
+		
+		# Make relevant directories for storing output
+		local fc_output_dir="${coassembly_dir}/${coassembly}/multi_mapping/annotation/feature_counts"
+		mkdir -p ${fc_output_dir}
+	
+		# Temporarily change the internal fields separator (IFS) to parse comma separators. See Vince Buffalo's "Bioinformatics Data Skills" (1st Ed.) chapter 12, pg 407 and corresponding Github page README at https://github.com/vsbuffalo/bds-files/tree/master/chapter-12-pipelines (accessed Nov 19, 2017)
+		local OFS="$IFS"
+		IFS=,
+
+		# Get names of individual samples provided for that coassembly name
+		local mapping_sample_IDs=(${read_mapping_samples[${j}]})
+
+		# Fix the IFS
+		IFS="$OFS"
+		
+		echo "${coassembly}"
+		
+		# Build array of BAM file locations - iteratively add each filepath
+		local bam_filepaths=($(echo ""))
+			
+		for mapping in ${mapping_sample_IDs[@]}; do
+			local bam_filepaths=($(echo "${bam_filepaths[@]} ${coassembly_dir}/${coassembly}/multi_mapping/${mapping}.bam"))
+		done
+		
+		# Run featureCounts
+		echo "rule run_feature_counts_multi_mapping:"
+		echo "${featureCounts_path} --minOverlap 1 -p -B -F GTF -T ${THREADS} --primary -O --fraction -t CDS -g ID -a ${coassembly_dir}/${coassembly}/annotation/prokka/${coassembly}.gtf -o ${fc_output_dir}/${coassembly}_counts.txt ${bam_filepaths[@]} 2> ${coassembly_dir}/${coassembly}/multi_mapping/logs/counts_per_region.log"
+		echo ""
+		${featureCounts_path} --minOverlap 1 -p -B -F GTF -T ${THREADS} --primary -O --fraction -t CDS -g ID -a ${coassembly_dir}/${coassembly}/annotation/prokka/${coassembly}.gtf -o ${fc_output_dir}/${coassembly}_counts.txt ${bam_filepaths[@]} 2> ${coassembly_dir}/${coassembly}/multi_mapping/logs/counts_per_region.log
+		echo ""
+
+		# Integrate onto annotations table
+		echo "rule add_multi_mapping_feature_counts_to_annotations_table:"
+		echo "${merge_multi_mapped_counts_path} -atlas-table ${coassembly_dir}/${coassembly}/${coassembly}_annotations.txt -featureCounts-table ${fc_output_dir}/${coassembly}_counts.txt -output-file ${coassembly_dir}/${coassembly}/${coassembly}_annotations_multi_mapping.txt | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/add_multi_mapping_feature_counts_to_annotations_table.log"
+		echo ""
+		${merge_multi_mapped_counts_path} -atlas-table ${coassembly_dir}/${coassembly}/${coassembly}_annotations.txt -featureCounts-table ${fc_output_dir}/${coassembly}_counts.txt -output-file ${coassembly_dir}/${coassembly}/${coassembly}_annotations_multi_mapping.txt | tee ${coassembly_dir}/${coassembly}/multi_mapping/logs/add_multi_mapping_feature_counts_to_annotations_table.log
+		echo ""
+	
+	done
+
+}
+
+
 function main {
 	echo "Running $(basename $0), version ${script_version}, on $(date)."
 	echo ""
@@ -709,6 +790,9 @@ function main {
 
 	# Finish running ATLAS with the new bins
 	finish_atlas
+	
+	# Add multi-mapped featureCounts info to annotations table
+	map_new_feature_counts
 
 	end_time=$(date)
 	
