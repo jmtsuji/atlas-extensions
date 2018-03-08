@@ -30,7 +30,7 @@ chmod 755 atlas-extensions/enter-atlas-coassembly
 sudo mv atlas-extensions/enter-atlas-coassembly /usr/local/bin
 
 # Enter the Docker container (first time entry could take several minutes)
-[sudo] enter-atlas [path_to_database_directory] [path_to_metagenome_directory] [path_to_output_directory]
+[sudo] enter-atlas-coassembly [path_to_database_directory] [path_to_metagenome_directory] [path_to_output_directory]
 # See https://github.com/jmtsuji/atlas-wrapper for more detailed usage notes
 # path_to_output_directory: must be the same as the output directory where the standard ATLAS run was performed
 
