@@ -532,7 +532,13 @@ function move_maxbin_output {
 			local bin_dir="${coassembly_dir}/${coassembly}/genomic_bins"
 			
 			mkdir -p ${bin_dir}/maxbin_OLD
-			mv ${bin_dir}/${coassembly}.*.fasta ${bin_dir}/${coassembly}*marker* ${bin_dir}/${coassembly}*.noclass ${bin_dir}/${coassembly}*.summary ${bin_dir}/${coassembly}*.tooshort ${bin_dir}/maxbin_OLD
+			mv ${bin_dir}/${coassembly}.*.fasta ${bin_dir}/${coassembly}.marker* ${bin_dir}/${coassembly}.summary ${bin_dir}/${coassembly}.log ${bin_dir}/maxbin_OLD
+			if [ -f ${bin_dir}/${coassembly}.noclass ]; then
+				mv ${bin_dir}/${coassembly}.noclass ${bin_dir}/maxbin_OLD
+			fi
+			if [ -f ${bin_dir}/${coassembly}.tooshort ]; then
+				mv ${bin_dir}/${coassembly}.tooshort ${bin_dir}/maxbin_OLD
+			fi
 			
 	done
 	
