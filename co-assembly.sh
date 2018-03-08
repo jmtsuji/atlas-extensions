@@ -699,6 +699,9 @@ function finish_atlas {
 	# Local params: none
 	# Return: writes files/directories to disk
 
+	# Start by moving the rest of the first run ATLAS output downstream of maxbin2 out of the way so that it is preserved after the new run
+	move_maxbin_pipeline_output
+	
 	local coassembly_dir="${OUTPUT_DIR}/coassembly"
 	local log_code=$(date '+%y%m%d_%H%M')
 	
