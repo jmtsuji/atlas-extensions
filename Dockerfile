@@ -11,6 +11,12 @@ RUN mv /home/atlas/atlas-extensions/merge_atlas_multi_mapped_counts.R /usr/local
 # Add customized snakefile modules
 RUN mv /home/atlas/atlas-extensions/setup/qc.snakefile /home/atlas/atlas-extensions/setup/assemble.snakefile /opt/conda/envs/atlas_env/lib/python3.6/site-packages/atlas/rules
 
+# Add co-assembly.sh
+RUN mv /home/atlas/atlas-extensions/co-assembly.sh /usr/local/bin
+
+# Clean up
+RUN rm -r /home/atlas/atlas-extensions
+
 ENTRYPOINT cd /home/atlas && \
-	echo "Welcome to the ATLAS-coassembly docker container. Run 'atlas -h' to see run options. Type 'exit' to leave the container." && \
+	echo "Welcome to the ATLAS-coassembly docker container. Run 'co-assembly.sh' to see run options. Type 'exit' to leave the container." && \
 	/bin/bash
