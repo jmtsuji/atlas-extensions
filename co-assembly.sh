@@ -506,8 +506,52 @@ function find_metabat_binaries {
  	# Local params: none
  	# Return: metabat_path; jgi_summ_path
 	
-	metabat_path=$(find ${OUTPUT_DIR} -name "metabat2")
-	jgi_summ_path=$(find ${OUTPUT_DIR} -name "jgi_summarize_bam_contig_depths")
+	local coassembly_dir="${OUTPUT_DIR}/coassembly"
+	
+	# Look in a few different places for the scripts.
+	if [[ -n $(find ${coassembly_dir} -name "metabat2") ]]; then
+	
+		# First priority is in the coassembly directory (if the user put it there)
+		metabat_path=$(find ${coassembly_dir} -name "metabat2")
+		
+	elif [[ -n $(find /usr/local/bin -name "metabat2") ]]; then
+	
+		# Next, try the standard global install directories
+		metabat_path=$(find /usr/local/bin -name "metabat2")
+		
+	elif [[ -n $(find /usr/bin -name "metabat2") ]]; then
+	
+		metabat_path=$(find /usr/bin -name "metabat2")
+		
+	else
+	
+		echo "ERROR: cannot find 'metabat2'. Job terminating."
+		exit 1
+		
+	fi
+	
+	
+	# Same for 'jgi_summarize_bam_contig_depths'
+	if [[ -n $(find ${coassembly_dir} -name "jgi_summarize_bam_contig_depths") ]]; then
+	
+		# First priority is in the coassembly directory (if the user put it there)
+		jgi_summ_path=$(find ${coassembly_dir} -name "jgi_summarize_bam_contig_depths")
+		
+	elif [[ -n $(find /usr/local/bin -name "jgi_summarize_bam_contig_depths") ]]; then
+	
+		# Next, try the standard global install directories
+		jgi_summ_path=$(find /usr/local/bin -name "jgi_summarize_bam_contig_depths")
+		
+	elif [[ -n $(find /usr/bin -name "jgi_summarize_bam_contig_depths") ]]; then
+	
+		jgi_summ_path=$(find /usr/bin -name "jgi_summarize_bam_contig_depths")
+		
+	else
+	
+		echo "ERROR: cannot find 'jgi_summarize_bam_contig_depths'. Job terminating."
+		exit 1
+		
+	fi
 	
 	# TODO - add sanity check to make sure path was found and that only a single path was found. For now, just state what the paths were.
 	echo "metabat_path: ${metabat_path}"
