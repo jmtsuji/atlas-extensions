@@ -551,11 +551,25 @@ function organize_new_bins {
 	# Local params: none
 	# Return: moves files on disk
 
+	echo "Moving metabat2 output to main genomic_bins location in place of maxbin output..."
+	
 	local coassembly_dir="${OUTPUT_DIR}/coassembly"
 
 	for coassembly in ${coassembly_names[@]}; do
 
 		local bin_output_dir="${coassembly_dir}/${coassembly}/multi_mapping/genomic_bins"
+		
+		# Change bin fasta suffix from .fa to .fasta to work with ATLAS
+		bin_names=($(find ${bin_output_dir} -iname "*.fa"))
+		
+		for name in ${bin_names[@]}; do
+		
+			local name_base=${name%.*}
+			mv ${name_base}.fa ${name_base}.fasta
+			
+		done
+		
+		# Move contents to main genomic bins dir		
 		mv ${bin_output_dir}/* ${coassembly_dir}/${coassembly}/genomic_bins
 		rm -r ${bin_output_dir}
 
