@@ -4,7 +4,7 @@ LABEL maintainer="Jackson M. Tsuji <jackson.tsuji@uwaterloo.ca>"
 
 # Install dependencies
 RUN /bin/bash -c "conda install -y --name atlas_env -c r r-dplyr"
-RUN git clone https://github.com/jmtsuji/atlas-extensions.git /home/atlas
+RUN git clone https://github.com/jmtsuji/atlas-extensions.git /home/atlas/atlas-extensions
 RUN /bin/bash /home/atlas/atlas-extensions/setup/install_metabat2.sh /usr/local/bin
 RUN mv /home/atlas/atlas-extensions/merge_atlas_multi_mapped_counts.R /usr/local/bin
 
