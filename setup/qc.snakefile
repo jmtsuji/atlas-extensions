@@ -493,8 +493,7 @@ else:
 
 
 # if PAIRED_END:
-#     rule 
-:
+#     rule combine_insert_stats:
 #         input:
 #             expand("{sample}/sequence_quality_control/read_stats/QC_insert_size_hist.txt",sample=SAMPLES),
 #         output:
