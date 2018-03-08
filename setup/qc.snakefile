@@ -564,5 +564,21 @@ else:
 #             rm -r ref
 #         fi
 #         """
+        
+rule coassembly_touch_QC:
+    input:
+        unpack(get_finalize_qc_input)
+    output:
+        touch("{sample}/sequence_quality_control/finished_QC"),
+    run:
+        print("Finished QC for sample {sample}\n")
+
+rule coassembly_report_QC:
+    input:
+        expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES)
+    output:
+        touch("finished_QC")
+    run:
+        print("Finished QC\n")
 
 # aggregate stats reports ...
