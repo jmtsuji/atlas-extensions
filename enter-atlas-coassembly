@@ -40,7 +40,7 @@ database_dir=$(realpath $1)
 fastq_dir=$(realpath $2)
 output_dir=$(realpath $3)
 atlas_image_name="pnnl/atlas:1.0.22-coassembly-r2" # for docker to build and run; hard-coded for now
-atlas_image_source="https://github.com/jmtsuji/atlas-coassembly.git" # for docker to build from; hard-coded for now
+atlas_image_source="https://github.com/jmtsuji/atlas-extensions.git" # for docker to build from; hard-coded for now
 #################################################################
 
 function test_directories {
