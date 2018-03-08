@@ -742,7 +742,27 @@ function find_merge_multi_mapped_counts_path_binary {
 	
 	local coassembly_dir="${OUTPUT_DIR}/coassembly"
 	
-	merge_multi_mapped_counts_path=$(find ${coassembly_dir} -name "merge_atlas_multi_mapped_counts.R")
+	# Look in a few different places for the R script.
+	if [[ -n $(find ${coassembly_dir} -name "merge_atlas_multi_mapped_counts.R") ]]; then
+	
+		# First priority is in the coassembly directory (if the user put it there)
+		merge_multi_mapped_counts_path=$(find ${coassembly_dir} -name "merge_atlas_multi_mapped_counts.R")
+		
+	elif [[ -n $(find /usr/local/bin -name "merge_atlas_multi_mapped_counts.R") ]]; then
+	
+		# Next, try the standard global install directories
+		merge_multi_mapped_counts_path=$(find /usr/local/bin -name "merge_atlas_multi_mapped_counts.R")
+		
+	elif [[ -n $(find /usr/bin -name "merge_atlas_multi_mapped_counts.R") ]]; then
+	
+		merge_multi_mapped_counts_path=$(find /usr/bin -name "merge_atlas_multi_mapped_counts.R")
+		
+	else
+	
+		echo "ERROR: cannot find 'merge_atlas_multi_mapped_counts.R'. Job terminating."
+		exit 1
+		
+	fi
 	
 	# TODO - add sanity check to make sure path was found and that only a single path was found. For now, just state what the paths were.
 	echo "merge_multi_mapped_counts_path: ${merge_multi_mapped_counts_path}"
