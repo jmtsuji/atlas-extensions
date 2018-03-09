@@ -1,3 +1,8 @@
+# Dockerfile for ATLAS + coassembly extension
+# Build and push with:
+# docker build -t jmtsuji/atlas-extensions:1.0.22-CA-r3 https://github.com/jmtsuji/atlas-extensions.git#improved_docker
+# docker push jmtsuji/atlas-extensions
+
 FROM continuumio/miniconda:4.4.10
 LABEL maintainer="Jackson M. Tsuji <jackson.tsuji@uwaterloo.ca>"
 
