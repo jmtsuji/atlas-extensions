@@ -16,9 +16,10 @@ if [ $# == 0 ]
     printf "$(basename $0): installs metabat on debian (jessie) to specified directory.\n"
     printf "Version: ${script_version}\n"
     printf "Contact Jackson M. Tsuji (jackson.tsuji@uwaterloo.ca) for bug reports or feature requests.\n\n"
-    printf "Usage: $(basename $0) install_directory\n\n"
+    printf "Usage: $(basename $0) install_directory download_directory\n\n"
     printf "Usage details:\n"
-    printf "1. install_directory: Path to the base directory where metabat will be installed. The binaries will be saved in a subdirectory of the base directory called 'berkeleylab-metabat-*' (* depends on the latest version of metabat).\n\n"
+    printf "1. install_directory: Path to the base directory where metabat binaries will be installed. The binaries will be saved in a subdirectory of the base directory called 'bin'. For example, you could choose '/usr/local'.\n"
+    printf "2. download_directory: Path to the temporary directory where files involved in installation will be stored until the end of the script. Directory must not already exist and will be cleaned up at the end of the install.\n\n"
     printf "Install dependencies: apt; an internet connection.\n\n"
     printf "Final notes:\n"
     printf "* Installs dependency packages GLOBALLY via apt -- careful!"
@@ -30,20 +31,28 @@ fi
 
 # Set variables from user input:
 INSTALL_DIR=$1
+TEMP_DIR=$2
 
 start_time=$(date)
 
-echo "Running $(basename $0) on ${start_time}. Input: install_directory = '${INSTALL_DIR}'."
+echo "Running $(basename $0) on ${start_time}. Input: install_directory = '${INSTALL_DIR}'; download_directory = '${TEMP_DIR}'."
 
 # Install dependencies
 echo "Updating apt..."
 apt-get update > /dev/null
 echo "Installing dependencies..." # gcc binutils
 apt-get install -y libboost-all-dev zlib1g-dev scons build-essential git curl libncurses5-dev
+# conda update -y conda python
 # conda install -y -c bioconda samtools # Seems like this isn't needed.
 
 echo "Downloading metabat..."
-metabat_dir=$(realpath ${INSTALL_DIR})
+metabat_dir=$(realpath ${TEMP_DIR})
+
+if [ -d $metabat_dir ]; then
+	echo "Specified temporary download folder '${metabat_dir}' already exists. Please delete before running this script. Job terminating."
+	exit 1
+fi
+
 mkdir -p ${metabat_dir}
 wget -P ${metabat_dir} https://bitbucket.org/berkeleylab/metabat/get/master.tar.gz
 cd ${metabat_dir}
@@ -53,17 +62,17 @@ cd berkeleylab-metabat-*
 # Temporarily allow for unset variables in case BOOST_ROOT is null
 echo "Installing and testing metabat2..."
 set +u
-scons install PREFIX=$HOME/metabat install
+scons install PREFIX=${INSTALL_DIR} install
 set -u
 
-# # Get path of the install directory
-# full_name=$(find ${metabat_dir} -name "berkeleylab-metabat-*" -type d)
+cd $INSTALL_DIR
+rm -r ${metabat_dir}
 
 end_time=$(date)
 
 echo ""
 echo ""
-echo "Done installing metabat2." # to '${full_name}'"
+echo "Done installing metabat2 to '${INSTALL_DIR}'"
 echo "Started at ${start_time} and finished at ${end_time}."
 echo ""
 
