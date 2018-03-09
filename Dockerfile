@@ -5,7 +5,8 @@ LABEL maintainer="Jackson M. Tsuji <jackson.tsuji@uwaterloo.ca>"
 # Install dependencies
 RUN /bin/bash -c "conda install -y --name atlas_env -c r r-plyr r-dplyr r-getopt"
 RUN git clone https://github.com/jmtsuji/atlas-extensions.git /home/atlas/atlas-extensions
-RUN /bin/bash /home/atlas/atlas-extensions/setup/install_metabat2.sh /usr/local/bin
+RUN /bin/bash /home/atlas/atlas-extensions/setup/install_metabat2.sh /home/atlas
+RUN cp /home/atlas/berkeleylab-metabat-*/*metabat* /home/atlas/berkeleylab-metabat-*/contigOverlaps /home/atlas/berkeleylab-metabat-*/runMetaBat.sh /home/atlas/berkeleylab-metabat-*/jgi_summarize_bam_contig_depths /usr/local/bin
 RUN mv /home/atlas/atlas-extensions/merge_atlas_multi_mapped_counts.R /usr/local/bin
 
 # Add customized snakefile modules
