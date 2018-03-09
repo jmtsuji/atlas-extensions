@@ -17,41 +17,31 @@ then
 	printf "\n$(basename $0): wrapper to start a Docker container with ATLAS-coassembly (for metagenome processing).\n"
 	printf "Version: ${script_version}\n"
 	printf "Contact Jackson Tsuji (jackson.tsuji@uwaterloo.ca; Neufeld research group) for error reports or feature requests.\n\n"
-	printf "Usage: $(basename $0) /path/to/database/directory /path/to/metagenome/directory /path/to/output/directory\n\n"
+	printf "Usage: $(basename $0) /path/to/database/directory /path/to/output/directory\n\n"
 	printf "Usage notes:\n"
-	printf "1. /path/to/database/directory: i.e., the database folder downloaded by ATLAS (or the folder where you want to download the ATLAS databases to from within the container).\n"
-	printf "2. /path/to/metagenome/directory: should contain all raw fastq files for metagenome analysis. Files should not be in subfolders and (for easiest use).\n"
-	printf "3. /path/to/output/directory: the directory where output files from ATLAS should go. It's recommended but not necessary to make a 'tmp' subdirectory here for ATLAS to dump temp files during processing. Use this as the 'tmpdir' in your config.yaml file as '/home/atlas/output/tmp'.\n\n"
-	printf "Note that each of these directories are mapped to new directory paths within the docker container:\n"
+	printf "1. /path/to/database/directory: i.e., the database folder downloaded by ATLAS.\n"
+	printf "2. /path/to/output/directory: the directory containing output from the original ATLAS run to be coassembled.\n\n"
+	printf "Note that these directories are mapped to new directory paths within the docker container:\n"
 	printf "1. /path/to/database/directory --> /home/atlas/databases\n"
-	printf "2. /path/to/metagenome/directory --> /home/atlas/data\n"
-	printf "3. /path/to/output/directory --> /home/atlas/output\n"
+	printf "2. /path/to/output/directory --> /home/atlas/output\n"
 	printf "Keep this in mind when specifying file locations within the Docker container.\n\n"
-	printf "Example workflows within the container:\n"
-	printf "A. Download ATLAS databases (only needed on first use): atlas download -o /home/atlas/databases\n"
-	printf "B. Make config.yaml file: atlas make-config --database-dir databases output/config.yaml data\n"
-	printf "C. Start ATLAS run: atlas assemble --jobs [number_of_jobs] --out-dir output output/config.yaml 2>&1 | tee output/atlas_run.log\n\n"
+	printf "Example workflow (see README.md for more details):\n"
+	printf "A. First, run ATLAS normally (outside this coassembly container) on your samples (e.g., using the enter-atlas container)."
+	printf "B. Make config.yaml file (CONFIG_FILEPATH.yaml should be a file that does not yet exist that you want to write): co-assembly.sh /home/atlas/output /home/atlas/databases [CONFIG_FILEPATH.yaml] [COASSEMBLY_GUIDE_FILEPATH.tsv] [THREADS]\n"
+	printf "C. Run coassembly (CONFIG_FILEPATH.yaml should be your desired .yaml file): co-assembly.sh /home/atlas/output /home/atlas/databases [CONFIG_FILEPATH.yaml] [COASSEMBLY_GUIDE_FILEPATH.tsv] [THREADS]\n\n"
 	exit 1
 fi
 
 #################################################################
 ##### Settings: #################################################
 database_dir=$(realpath $1)
-fastq_dir=$(realpath $2)
-output_dir=$(realpath $3)
-atlas_image_name="pnnl/atlas:1.0.22-coassembly-r2" # for docker to build and run; hard-coded for now
-atlas_image_source="https://github.com/jmtsuji/atlas-extensions.git" # for docker to build from; hard-coded for now
+output_dir=$(realpath $2)
+atlas_image_name="pnnl/atlas:1.0.22-coassembly-r3" # for docker to build and run; hard-coded for now
+atlas_image_source="https://github.com/jmtsuji/atlas-extensions.git#improved_docker" # for docker to build from; hard-coded for now
 #################################################################
 
 function test_directories {
 	# Description: tests that the input directories exist
-	
-	# Test that /path/to/metagenome/directory exists, and exit if it does not
-	if [ ! -d ${fastq_dir} ]; then
-	# From http://stackoverflow.com/a/4906665, accessed Feb. 4, 2017
-		print "Did not find metagenome directory at '${fastq_dir}'. Job terminating."
-		exit 1
-	fi
 
 	# Test that /path/to/output/directory exists, and exit if it does not
 	if [ ! -d ${output_dir} ]; then
@@ -72,10 +62,8 @@ function setup_atlas {
 	# Description: builds the ATLAS container with a specific tag. Doesn't rebuild if the container is already made.
 	
 	echo "Installing ATLAS docker container (if not already installed; could take several minutes on first run)..."
-	# First build source container
-	docker build -t pnnl/atlas:1.0.22 github.com/jmtsuji/atlas-wrapper.git > /dev/null 2>&1
-	
-	docker build -t ${atlas_image_name} ${atlas_image_source} > /dev/null 2>&1
+		
+	docker build -t ${atlas_image_name} ${atlas_image_source} # > /dev/null 2>&1
 	echo ""
 	
 }
@@ -84,7 +72,6 @@ function start_atlas {
 	# Description: starts the container
 	
 	docker run -v ${database_dir}:/home/atlas/databases \
-	-v ${fastq_dir}:/home/atlas/data \
 	-v ${output_dir}:/home/atlas/output \
 	-it ${atlas_image_name} /bin/bash
 	
