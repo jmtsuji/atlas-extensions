@@ -8,7 +8,7 @@ set -e
 set -u
 set -o pipefail
 
-script_version="1.0.0"
+script_version="1.0.1"
 
 # If no input is provided, exit out and provide help
 if [ $# == 0 ]
@@ -39,10 +39,10 @@ echo "Running $(basename $0) on ${start_time}. Input: install_directory = '${INS
 echo "Updating apt..."
 apt-get update > /dev/null
 echo "Installing dependencies..." # gcc binutils
-apt-get install -y libboost-all-dev zlib1g-dev scons build-essential git curl libncurses5-dev > /dev/null
+apt-get install -y libboost-all-dev zlib1g-dev scons build-essential git curl libncurses5-dev
 # conda install -y -c bioconda samtools # Seems like this isn't needed.
 
-echo "Downloading metabats..."
+echo "Downloading metabat..."
 metabat_dir=$(realpath ${INSTALL_DIR})
 mkdir -p ${metabat_dir}
 wget -P ${metabat_dir} https://bitbucket.org/berkeleylab/metabat/get/master.tar.gz
@@ -53,17 +53,17 @@ cd berkeleylab-metabat-*
 # Temporarily allow for unset variables in case BOOST_ROOT is null
 echo "Installing and testing metabat2..."
 set +u
-scons install PREFIX=$HOME [BOOST_ROOT=$BOOST_ROOT]
+scons install PREFIX=$HOME/metabat install
 set -u
 
-# Get path of the install directory
-full_name=$(find ${metabat_dir} -name "berkeleylab-metabat-*" -type d)
+# # Get path of the install directory
+# full_name=$(find ${metabat_dir} -name "berkeleylab-metabat-*" -type d)
 
 end_time=$(date)
 
 echo ""
 echo ""
-echo "Done installing metabat2 to '${full_name}'"
+echo "Done installing metabat2." # to '${full_name}'"
 echo "Started at ${start_time} and finished at ${end_time}."
 echo ""
 
