@@ -36,8 +36,8 @@ fi
 ##### Settings: #################################################
 database_dir=$(realpath $1)
 output_dir=$(realpath $2)
-atlas_image_name="pnnl/atlas:1.0.22-coassembly-r3" # for docker to build and run; hard-coded for now
-atlas_image_source="https://github.com/jmtsuji/atlas-extensions.git#improved_docker" # for docker to build from; hard-coded for now
+atlas_image_name="jmtsuji/atlas-extensions:1.0.22-coassembly-r3" # for docker to build and run; hard-coded for now
+atlas_image_source="https://github.com/jmtsuji/atlas-extensions.git" # deprecated
 #################################################################
 
 function test_directories {
@@ -58,6 +58,7 @@ function test_directories {
 	fi
 }
 
+# Deprecated; only needed if not yet on Docker Hub
 function setup_atlas {
 	# Description: builds the ATLAS container with a specific tag. Doesn't rebuild if the container is already made.
 	
@@ -82,7 +83,7 @@ function main {
 	echo ""
 	
 	test_directories
-	setup_atlas
+	# setup_atlas # Deprecated - only needed if not yet on Docker Hub
 	
 	start_time=$(date)
 	start_atlas
