@@ -25,7 +25,7 @@ library(plyr)
 suppressMessages(library(dplyr))
 #####################################################
 
-SCRIPT_VERSION <- "1.0.0"
+SCRIPT_VERSION <- "1.0.22-coassembly-r3"
 
 parse_command_line_input <- function() {
   ### Grab arguments
