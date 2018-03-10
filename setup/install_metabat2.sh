@@ -8,7 +8,7 @@ set -e
 set -u
 set -o pipefail
 
-script_version="1.0.1"
+script_version="1.0.22-coassembly-r3"
 
 # If no input is provided, exit out and provide help
 if [ $# == 0 ]
