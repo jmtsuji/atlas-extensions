@@ -14,6 +14,9 @@ RUN apt-get update
 RUN git clone -b improved_docker https://github.com/jmtsuji/atlas-extensions.git /home/atlas/atlas-extensions
 RUN /bin/bash /home/atlas/atlas-extensions/setup/install_metabat2.sh /usr/local /home/atlas/tmp
 
+# Clean up
+RUN apt-get purge -y libboost-all-dev zlib1g-dev scons build-essential libncurses5-dev
+
 # Make conda env and install ATLAS and R dependencies
 RUN conda create -y --name atlas_coassembly_env python=3.6
 RUN conda install -y --name atlas_coassembly_env -c bioconda python=3.6 snakemake bbmap=37.17 click
