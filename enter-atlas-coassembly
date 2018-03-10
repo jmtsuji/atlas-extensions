@@ -8,7 +8,7 @@ set -e
 set -u
 set -o pipefail
 
-script_version=1.0.0
+script_version="1.0.22-coassembly-r3"
 date_code=$(date '+%y%m%d')
 
 # If input field is empty, print help and end script
