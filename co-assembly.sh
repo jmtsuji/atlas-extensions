@@ -11,7 +11,7 @@ set -e
 set -u
 set -o pipefail
 
-script_version="1.0.22-CA-r2" # to match ATLAS version it is designed to work with
+script_version="1.0.22-coassembly-r3" # to match ATLAS version it is designed to work with
 
 # If no input is provided, exit out and provide help
 if [ $# == 0 ]
