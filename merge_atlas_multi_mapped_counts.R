@@ -94,8 +94,8 @@ merge_tables <- function(atlas_table_filepath, featureCounts_table_filepath) {
     sample_col <- i + 6
     sample_name_old <- colnames(counts_tbl)[sample_col]
     
-    sample_name_new <- strsplit(sample_name_old, split = "sequence_alignment")[[1]][1]
-    sample_name_new <- substr(sample_name_new, start = 1, stop = nchar(sample_name_new) - 1)
+    sample_name_new <- strsplit(sample_name_old, split = "multi_mapping.")[[1]][2]
+    sample_name_new <- substr(sample_name_new, start = 1, stop = nchar(sample_name_new) - 4)
     sample_name_new <- paste(sample_name_new, "_count", sep = "")
     
     colnames(counts_tbl)[sample_col] <- sample_name_new
