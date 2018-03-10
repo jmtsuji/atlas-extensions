@@ -1,17 +1,17 @@
 # Dockerfile for ATLAS + coassembly extension
 # Build and push with:
-# docker build -t jmtsuji/atlas-extensions:1.0.22-CA-r3 https://github.com/jmtsuji/atlas-extensions.git#improved_docker
+# docker build -t jmtsuji/atlas-extensions:1.0.22-coassembly-r3 jmtsuji/atlas-extensions:1.0.22-coassembly-latest https://github.com/jmtsuji/atlas-extensions.git
 # docker push jmtsuji/atlas-extensions
 
 FROM continuumio/miniconda:4.4.10
 LABEL maintainer="Jackson M. Tsuji <jackson.tsuji@uwaterloo.ca>"
 
 # Update conda
-RUN conda update -y -n base conda python
+RUN conda update -y conda
 
 # Install metabat2
 RUN apt-get update
-RUN git clone -b improved_docker https://github.com/jmtsuji/atlas-extensions.git /home/atlas/atlas-extensions
+RUN git clone https://github.com/jmtsuji/atlas-extensions.git /home/atlas/atlas-extensions
 RUN /bin/bash /home/atlas/atlas-extensions/setup/install_metabat2.sh /usr/local /home/atlas/tmp
 
 # Clean up
