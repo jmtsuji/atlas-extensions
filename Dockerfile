@@ -6,8 +6,8 @@
 FROM continuumio/miniconda:4.4.10
 LABEL maintainer="Jackson M. Tsuji <jackson.tsuji@uwaterloo.ca>"
 
-# Update conda to prevent gcc error
-RUN conda update -y conda python
+# Update conda
+RUN conda update -y conda
 
 # Install metabat2
 RUN apt-get update
@@ -38,7 +38,7 @@ RUN if ! grep -q "shell\.executable" /opt/conda/envs/atlas_coassembly_env/lib/py
 	/opt/conda/envs/atlas_coassembly_env/lib/python3.6/site-packages/atlas/Snakefile; fi
 
 # Add code to automatically start atlas_coassembly_env environment when logging in
-# RUN echo "source activate atlas_coassembly_env" >> /root/.bashrc
+RUN echo "source activate atlas_coassembly_env > /dev/null" >> /root/.bashrc
 
 RUN mkdir -p /home/atlas
 
