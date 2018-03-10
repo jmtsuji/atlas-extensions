@@ -7,7 +7,7 @@ FROM continuumio/miniconda:4.4.10
 LABEL maintainer="Jackson M. Tsuji <jackson.tsuji@uwaterloo.ca>"
 
 # Update conda
-RUN conda update -y conda
+RUN conda update -y -n base conda python
 
 # Install metabat2
 RUN apt-get update
