@@ -111,7 +111,7 @@ parse_greengenes_taxonomy <- function(greengenes_entry_vector, contig_id, locus_
     df <- as.data.frame(df, stringsAsFactors = FALSE)
     colnames(df) <- c("t_kingdom", "t_phylum", "t_class", "t_order", "t_family", "t_genus", "t_species")
     
-    # Add locus_tag and contig ID for santity checking
+    # Add locus_tag and contig ID for santity checking (not yet added!)
     df$locus_tag <- locus_tag
     df$contig_id <- contig_id
     
@@ -127,6 +127,11 @@ parse_greengenes_taxonomy <- function(greengenes_entry_vector, contig_id, locus_
     for (i in 1:ncol(df)) {
       df[1,i] <- gsub(pattern = "?", replacement = "", fixed = TRUE, x = df[1,i])
     }
+    
+    # Bring column number down to Anvi'o requirements
+    df$t_kingdom <- NULL
+    df$locus_tag <- NULL
+    df$contig_id <- NULL
     
     return(df)
   }
