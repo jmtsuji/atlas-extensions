@@ -91,7 +91,7 @@ parse_taxonomy_preface <- function(taxonomy_rank_entry) {
   return(split)
 }
 
-parse_greengenes_taxonomy <- function(greengenes_entry_vector, locus_tag) { 
+parse_greengenes_taxonomy <- function(greengenes_entry_vector, contig_id, locus_tag) { 
   # E.g., greengenes_entry_vector <- "k__Bacteria;p__Proteobacteria;c__Gammaproteobacteria;o__Methylococcales;f__Methylococcaceae;g__Methylobacter;s__?"
   # locus_tag <- "CA-L227-2014_00003"
   # Output is that single line formatted as a data frame matching Anvi'o's specifications.
@@ -111,9 +111,17 @@ parse_greengenes_taxonomy <- function(greengenes_entry_vector, locus_tag) {
     df <- as.data.frame(df, stringsAsFactors = FALSE)
     colnames(df) <- c("t_kingdom", "t_phylum", "t_class", "t_order", "t_family", "t_genus", "t_species")
     
-    # Add locus_tag
-    df$gene_callers_id <- locus_tag
-    df <- df[,c(8,1:7)]
+    # Add locus_tag and contig ID for santity checking
+    df$locus_tag <- locus_tag
+    df$contig_id <- contig_id
+    
+    # Parse locus_tag to get gene_callers_id
+    gene_callers_id <- strsplit(locus_tag, split = "_")[[1]]
+    gene_callers_id <- as.numeric(gene_callers_id[length(gene_callers_id)])
+    
+    # Add to table and re-arrange for clarity
+    df$gene_callers_id <- gene_callers_id
+    df <- df[,c(ncol(df), 1:(ncol(df) - 1))]
     
     # Remove "?" and replace with blank
     for (i in 1:ncol(df)) {
@@ -174,7 +182,8 @@ main <- function() {
   
   # Make the taxonomy table
   cat("Parsing taxonomy\n")
-  parsed_tax <- lapply(1:nrow(atlas_table), function(x) { parse_greengenes_taxonomy(atlas_table[x,9], atlas_table[x,2]) })
+  parsed_tax <- lapply(1:nrow(atlas_table), function(x) { parse_greengenes_taxonomy(greengenes_entry_vector = atlas_table[x,9], 
+                                                                                    contig_id = atlas_table[x,1], locus_tag = atlas_table[x,2]) })
   parsed_tax <- dplyr::bind_rows(parsed_tax)
   
   # Make the contig-bin mapping file
