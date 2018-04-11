@@ -90,7 +90,7 @@ anvi-run-hmms -c ${coassembly_sample_ID}_contigs.db --num-threads ${threads} \
 
 #### 4. Add functional info
 # TODO - find a way to test whether or not setup is needed. Assumes already set up for now.
-# anvi-setup-ncbi-cogs --num-threads ${threads} --cog-data-dir ${cogs_data_dir} --cog-data-source ftp://ftp.ncbi.nih.gov/pub/COG/COG2014/data/
+# anvi-setup-ncbi-cogs --num-threads ${threads} --just-do-it 2>&1 | tee misc_logs/anvi-setup-ncbi-cogs.log # --cog-data-dir ${cogs_data_dir}
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with COGs"
 cd ${output_dir}
 anvi-run-ncbi-cogs --num-threads ${threads} 2>&1 | tee misc_logs/anvi-run-ncbi-cogs.log # --cog-data-dir ${cogs_data_dir}
