@@ -35,6 +35,7 @@ cd ${output_dir}/01a_import_prokka
 if [ ! -f gff_parser.py ]; then
 	"[$(date '+%y%m%d %H:%M:%S %Z')]: Installing gff_parser.py because it is not already present in the run folder"
 	wget https://raw.githubusercontent.com/karkman/gff_parser/master/gff_parser.py -O gff_parser.py
+	# TODO - make silent
 fi
 
 # TODO - check if already installed
@@ -42,7 +43,7 @@ pip install gffutils
 
 python gff_parser.py ${atlas_dir}/coassembly/${coassembly_sample_ID}/annotation/prokka/${coassembly_sample_ID}.gff \
 				--gene-calls ${coassembly_sample_ID}_gene_calls.txt \
-				--annotation ${coassembly_sample_ID}_gene_annot.txt 2>&1 gff_parser.log
+				--annotation ${coassembly_sample_ID}_gene_annot.txt 2>&1 | tee gff_parser.log
 
 
 #### 1b. Import ATLAS table info
@@ -52,12 +53,15 @@ cd ${output_dir}/01b_import_atlas_table
 if [ ! -f parse_atlas_table_for_anvio.R ]; then
 	# TODO - do this with proper version control
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Installing parse_atlas_table_for_anvio.R because it is not already present in the run folder"
-	wget https://github.com/jmtsuji/atlas-extensions/blob/master/parse_atlas_table_for_anvio.R -O parse_atlas_table_for_anvio.R
+	git clone https://github.com/jmtsuji/atlas-extensions.git
+	mv atlas-extensions/parse_atlas_table_for_anvio.R .
+	rm -rf atlas-extensions
+	chmod 755 parse_atlas_table_for_anvio.R
 fi
 
 ./parse_atlas_table_for_anvio.R -a ${atlas_dir}/coassembly/${coassembly_sample_ID}/${coassembly_sample_ID}_annotations_multi_mapped.txt \
 				-t ${coassembly_sample_ID}_gene_taxonomy.tsv -c ${coassembly_sample_ID}_binning_results.tsv \
-				-b ${coassembly_sample_ID}_bins_info.tsv 2>&1 parse_atlas_table_for_anvio.log
+				-b ${coassembly_sample_ID}_bins_info.tsv 2>&1 | tee parse_atlas_table_for_anvio.log
 
 
 #### 2. Generate contigs database
