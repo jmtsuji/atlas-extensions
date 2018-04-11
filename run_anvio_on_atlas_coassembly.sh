@@ -67,11 +67,12 @@ fi
 #### 2. Generate contigs database
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Generating the contigs database"
 cd ${output_dir}
-anvi-gen-contigs-database -f ${atlas_dir}/coassembly/${coassembly_sample_ID}_contigs.fasta \
+anvi-gen-contigs-database -f ${atlas_dir}/coassembly/${coassembly_sample_ID}/${coassembly_sample_ID}_contigs.fasta \
 				-o ${coassembly_sample_ID}_contigs.db -n ${coassembly_sample_ID}_contigs_db \
-				--external-gene-calls ${output_dir}/01a_import_prokka/${coassembly_sample_ID}_gene_calls.txt
+				--external-gene-calls ${output_dir}/01a_import_prokka/${coassembly_sample_ID}_gene_calls.txt \
+				--ignore-internal-stop-codons 2>&1 | tee anvi-gen-contigs-database.log
 
-## Example
+## Example table
 # gene_callers_id	contig	start	stop	direction	partial	source	version
 # 1	contig_01	1113	1677	f	0	program	v1.0
 ## "The statement above means that the index of the first nucleotide in any contig should be 0. In other words, we start counting from 0, not from 1."
