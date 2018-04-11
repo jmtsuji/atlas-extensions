@@ -1,3 +1,4 @@
+#!/usr/bin/env Rscript
 # Extract information from the ATLAS table for use in Anvi'o
 # Copyright Neufeld lab, 2018
 # Description: Generates three summary files from the ATLAS table needed for import into Anvi'o.
