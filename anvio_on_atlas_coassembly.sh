@@ -10,7 +10,7 @@ threads=12
 
 cogs_data_dir="/Hippodrome/anvio/databases"
 
-mkdir -p ${output_dir}/01_import
+mkdir -p ${output_dir}/01_import ${output_dir}/02_mapping
 
 # Test
 # TODO - finish
@@ -42,62 +42,75 @@ anvi-gen-contigs-database -f ${atlas_dir}/coassembly/${coassembly_sample_ID}_con
 
 # 3. Annotate with single-copy marker genes
 cd ${output_dir}
-anvi-run-hmms -c contigs.db --num-threads ${threads}
-# anvi-run-hmms -c contigs.db --num-threads ${threads} --hmm-profile-dir [your_dir_for_custom_hmms]
+anvi-run-hmms -c ${coassembly_sample_ID}_contigs.db --num-threads ${threads}
+# anvi-run-hmms -c ${coassembly_sample_ID}_contigs.db --num-threads ${threads} --hmm-profile-dir [your_dir_for_custom_hmms]
 
-anvi-display-contigs-stats contigs.db
+# anvi-display-contigs-stats ${coassembly_sample_ID}_contigs.db # Will this work?
+
 
 # 4. Add functional info
 # TODO - find a way to test whether or not setup is needed. Assumes already set up for now.
 # anvi-setup-ncbi-cogs --cog-data-dir ${cogs_data_dir} --num-threads ${threads}
-
+cd ${output_dir}
 anvi-run-ncbi-cogs --cog-data-dir ${cogs_data_dir} --num-threads ${threads}
 
 
+# 5. Import functional and taxonomic info
+cd ${output_dir}
+anvi-import-functions -c ${coassembly_sample_ID}_contigs.db -i ${output_dir}/01_import/${coassembly_sample_ID}_gene_annot.txt
 
-anvi-import-functions -c contigs.db -i gene_calls.txt
+## Example table
+# gene_callers_id	source	accession	function	e_value
+# 1	Pfam	PF01132	Elongation factor P (EF-P) OB domain	4e-23
 
-# Import functions - functional
-gene_callers_id	source	accession	function	e_value
-1	Pfam	PF01132	Elongation factor P (EF-P) OB domain	4e-23
+# TODO - format ATLAS annotations table into the input matrix. Need to parse Greengenes.
+anvi-import-taxonomy -c ${coassembly_sample_ID}_contigs.db -i input_matrix.txt -p default_matrix
 
-As you can see,
-Not every gene call has to be present in the matrix,
-It is OK if there are multiple annotations from the same source for a given gene call,
-It is OK if a give gene is annotated only by a single source.
-
-
-anvi-import-taxonomy -c CONTIGS.db -i input_matrix.txt -p default_matrix
-
-# Taxonomy
-gene_callers_id	t_phylum	t_class	t_order	t_family	t_genus	t_species
-1	 	 	 	 	 	Bacteroides fragilis
-2	 	 	 	 	 	Bacteroides fragilis
+## Example table
+# gene_callers_id	t_phylum	t_class	t_order	t_family	t_genus	t_species
+# 1	 	 	 	 	 	Bacteroides fragilis
+# 2	 	 	 	 	 	Bacteroides fragilis
 
 
+# 6. Make relative abundance profiles
+# Get samples
+cd ${output_dir}/02_mapping
+sample_names=($(find ${atlas_dir}/coassembly/${coassembly_sample_ID}/multi_mapping -name "*.bam" -type f))
 
-anvi-profile -i SAMPLE-01.bam -c contigs.db --output-dir --sample-name
+for sample in ${sample_names[@]}; do
+	sample_name=${sample##*/}
+	sample_name=${sample_name%.*}
+	
+	echo "Mapping ${sample_name}"
+	anvi-profile -i ${sample} -c ${coassembly_sample_ID}_contigs.db --output-dir ${sample_name} --sample-name ${sample_name}
+done
 
-anvi-merge SAMPLE-01/PROFILE.db SAMPLE-02/PROFILE.db SAMPLE-03/PROFILE.db -o SAMPLES-MERGED -c contigs.db --skip-concoct-binning
+cd ${output_dir}
+anvi-merge ${output_dir}/02_mapping/*/PROFILE.db -o ${coassembly_sample_ID}_samples_merged -c ${coassembly_sample_ID}_contigs.db --skip-concoct-binning
 
-# Import my bins
-anvi-import-collection binning_results.txt -p SAMPLES-MERGED/PROFILE.db -c contigs.db --source "SOURCE_NAME"[metabat2] --contigs-mode --bins-info [example_bins_info_file.txt]
+# 7. Import my bins
+# TODO - get my bin info into the proper format - 2 tables needed.
 
-# external_binning_of_contigs.txt
-204_10M_MERGED.PERFECT.gz.keep_contig_878	Bin_2
-204_10M_MERGED.PERFECT.gz.keep_contig_6515	Bin_3
-204_10M_MERGED.PERFECT.gz.keep_contig_1720	Bin_4
-contig_1	Bin_4
+cd ${output_dir}
+anvi-import-collection 01_import/${coassembly_sample_ID}_binning_results.tsv -p ${coassembly_sample_ID}_samples_merged/PROFILE.db \
+				-c ${coassembly_sample_ID}_contigs.db --source "metabat2" --contigs-mode \
+				--bins-info 01_import/${coassembly_sample_ID}_bins_info.tsv
 
-# example_bins_info_file.txt
-Bin_0	UNKNOWN_SOURCE	#ABCDEF
-Bin_1	UNKNOWN_SOURCE	#FF2244
-Bin_2	UNKNOWN_SOURCE	#2244FF
-Bin_3	UNKNOWN_SOURCE	#22FF44
-Bin_4	UNKNOWN_SOURCE	#44FFFF
+## Example table: external_binning_of_contigs.txt
+# 204_10M_MERGED.PERFECT.gz.keep_contig_878	Bin_2
+# 204_10M_MERGED.PERFECT.gz.keep_contig_6515	Bin_3
+# 204_10M_MERGED.PERFECT.gz.keep_contig_1720	Bin_4
+# contig_1	Bin_4
 
+## Example info table: example_bins_info_file.txt
+# Bin_0	UNKNOWN_SOURCE	#ABCDEF
+# Bin_1	UNKNOWN_SOURCE	#FF2244
+# Bin_2	UNKNOWN_SOURCE	#2244FF
+# Bin_3	UNKNOWN_SOURCE	#22FF44
+# Bin_4	UNKNOWN_SOURCE	#44FFFF
 
-anvi-interactive -p SAMPLES-MERGED/PROFILE.db -c contigs.db -C metabat2 --server-only -P 8080
-
-
+# 8. Visualize - run OUTSIDE shell script.
+printf "Pipeline done. To visualize, please run:\n"
+printf "cd ${output_dir}\n"
+printf "anvi-interactive -p ${coassembly_sample_ID}_samples_merged/PROFILE.db -c ${coassembly_sample_ID}_contigs.db -C metabat2 --server-only -P 8080\n\n"
 
