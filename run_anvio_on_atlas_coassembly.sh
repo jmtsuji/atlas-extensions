@@ -19,7 +19,8 @@ threads=12
 #cogs_data_dir="/Winnebago/jmtsuji/miniconda2/envs/anvio4/lib/python3.6/site-packages/anvio/data/misc/COG"
 
 # Make needed output directories
-mkdir -p ${output_dir}/01a_import_prokka ${output_dir}/01b_import_atlas_table ${output_dir}/02_multi_mapping
+mkdir -p ${output_dir}/01a_import_prokka ${output_dir}/01b_import_atlas_table \
+				${output_dir}/02_multi_mapping/logs ${output_dir}/misc_logs
 
 ## Test if COGs database exists
 # TODO - finish
@@ -70,7 +71,7 @@ cd ${output_dir}
 anvi-gen-contigs-database -f ${atlas_dir}/coassembly/${coassembly_sample_ID}/${coassembly_sample_ID}_contigs.fasta \
 				-o ${coassembly_sample_ID}_contigs.db -n ${coassembly_sample_ID}_contigs_db \
 				--external-gene-calls ${output_dir}/01a_import_prokka/${coassembly_sample_ID}_gene_calls.txt \
-				--ignore-internal-stop-codons 2>&1 | tee anvi-gen-contigs-database.log
+				--ignore-internal-stop-codons 2>&1 | tee misc_logs/anvi-gen-contigs-database.log
 
 ## Example table
 # gene_callers_id	contig	start	stop	direction	partial	source	version
@@ -81,7 +82,8 @@ anvi-gen-contigs-database -f ${atlas_dir}/coassembly/${coassembly_sample_ID}/${c
 #### 3. Annotate with single-copy marker genes
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with single-copy marker genes"
 cd ${output_dir}
-anvi-run-hmms -c ${coassembly_sample_ID}_contigs.db --num-threads ${threads}
+anvi-run-hmms -c ${coassembly_sample_ID}_contigs.db --num-threads ${threads} \
+				2>&1 | tee misc_logs/anvi-run-hmms.log
 # anvi-run-hmms -c ${coassembly_sample_ID}_contigs.db --num-threads ${threads} --hmm-profile-dir [your_dir_for_custom_hmms]
 # anvi-display-contigs-stats ${coassembly_sample_ID}_contigs.db # Will this work?
 
@@ -91,13 +93,15 @@ anvi-run-hmms -c ${coassembly_sample_ID}_contigs.db --num-threads ${threads}
 # anvi-setup-ncbi-cogs --num-threads ${threads} --cog-data-dir ${cogs_data_dir} --cog-data-source ftp://ftp.ncbi.nih.gov/pub/COG/COG2014/data/
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with COGs"
 cd ${output_dir}
-anvi-run-ncbi-cogs --cog-data-dir ${cogs_data_dir} --num-threads ${threads}
+anvi-run-ncbi-cogs --num-threads ${threads} 2>&1 | tee misc_logs/anvi-run-ncbi-cogs.log # --cog-data-dir ${cogs_data_dir}
 
 
 #### 5. Import functional and taxonomic info
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing functional annotations from prokka"
 cd ${output_dir}
-anvi-import-functions -c ${coassembly_sample_ID}_contigs.db -i ${output_dir}/01a_import_prokka/${coassembly_sample_ID}_gene_annot.txt
+anvi-import-functions -c ${coassembly_sample_ID}_contigs.db \
+				-i ${output_dir}/01a_import_prokka/${coassembly_sample_ID}_gene_annot.txt \
+				2>&1 | tee misc_logs/anvi-import-functions.log
 
 ## Example table
 # gene_callers_id	source	accession	function	e_value
@@ -105,7 +109,9 @@ anvi-import-functions -c ${coassembly_sample_ID}_contigs.db -i ${output_dir}/01a
 
 # TODO - format ATLAS annotations table into the input matrix. Need to parse Greengenes.
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing taxonomic gene classifications from ATLAS"
-anvi-import-taxonomy -c ${coassembly_sample_ID}_contigs.db -i 01b_import_atlas_table/${coassembly_sample_ID}_gene_taxonomy.tsv -p default_matrix
+anvi-import-taxonomy -c ${coassembly_sample_ID}_contigs.db \
+				-i 01b_import_atlas_table/${coassembly_sample_ID}_gene_taxonomy.tsv \
+				-p default_matrix 2>&1 | tee misc_logs/anvi-import-taxonomy
 
 ## Example table
 # gene_callers_id	t_phylum	t_class	t_order	t_family	t_genus	t_species
@@ -124,21 +130,27 @@ for sample in ${sample_names[@]}; do
 	sample_name=${sample_name%.*}
 	
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Mapping ${sample_name}"
-	anvi-profile -i ${sample} -c ${coassembly_sample_ID}_contigs.db --output-dir ${sample_name} --sample-name ${sample_name}
+	anvi-profile -i ${sample} -c ${coassembly_sample_ID}_contigs.db \
+					--output-dir ${sample_name} --sample-name ${sample_name} \
+					2>&1 | tee logs/anvi-profile_${sample_name}.log
 done
 
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Merging information from mapped samples"
 cd ${output_dir}
-anvi-merge ${output_dir}/02_mapping/*/PROFILE.db -o ${coassembly_sample_ID}_samples_merged -c ${coassembly_sample_ID}_contigs.db --skip-concoct-binning
+anvi-merge ${output_dir}/02_mapping/*/PROFILE.db -o ${coassembly_sample_ID}_samples_merged \
+				-c ${coassembly_sample_ID}_contigs.db --skip-concoct-binning \
+				2>&1 | tee misc_logs/anvi-merge_${sample_name}.log
 
 #### 7. Import my bins
 # TODO - get my bin info into the proper format - 2 tables needed.
 
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing bin info from ATLAS"
 cd ${output_dir}
-anvi-import-collection 01b_import_atlas_table/${coassembly_sample_ID}_binning_results.tsv -p ${coassembly_sample_ID}_samples_merged/PROFILE.db \
+anvi-import-collection 01b_import_atlas_table/${coassembly_sample_ID}_binning_results.tsv \
+				-p ${coassembly_sample_ID}_samples_merged/PROFILE.db \
 				-c ${coassembly_sample_ID}_contigs.db --source "metabat2" --contigs-mode \
-				--bins-info 01b_import_atlas_table/${coassembly_sample_ID}_bins_info.tsv
+				--bins-info 01b_import_atlas_table/${coassembly_sample_ID}_bins_info.tsv \
+				2>&1 | tee misc_logs/anvi-import-collection.log
 
 ## Example table: external_binning_of_contigs.txt
 # 204_10M_MERGED.PERFECT.gz.keep_contig_878	Bin_2
