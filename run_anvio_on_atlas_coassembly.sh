@@ -93,8 +93,10 @@ anvi-run-hmms -c ${coassembly_sample_ID}_contigs.db --num-threads ${threads} \
 # anvi-setup-ncbi-cogs --num-threads ${threads} --just-do-it 2>&1 | tee misc_logs/anvi-setup-ncbi-cogs.log # --cog-data-dir ${cogs_data_dir}
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with COGs"
 cd ${output_dir}
-anvi-run-ncbi-cogs --num-threads ${threads} 2>&1 | tee misc_logs/anvi-run-ncbi-cogs.log # --cog-data-dir ${cogs_data_dir}
-
+mkdir tmp
+anvi-run-ncbi-cogs --num-threads ${threads} -c ${coassembly_sample_ID}_contigs.db \
+				--temporary-dir-path tmp 2>&1 | tee misc_logs/anvi-run-ncbi-cogs.log # --cog-data-dir ${cogs_data_dir}
+rm -rf tmp
 
 #### 5. Import functional and taxonomic info
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing functional annotations from prokka"
@@ -112,6 +114,7 @@ echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing taxonomic gene classifications 
 anvi-import-taxonomy -c ${coassembly_sample_ID}_contigs.db \
 				-i 01b_import_atlas_table/${coassembly_sample_ID}_gene_taxonomy.tsv \
 				-p default_matrix 2>&1 | tee misc_logs/anvi-import-taxonomy
+# TODO - Some problems -- the gffparse file seems to be missing the bottom rows! Perhaps the output of my R script is correct but gffparse OR the gff file itself contains an error.
 
 ## Example table
 # gene_callers_id	t_phylum	t_class	t_order	t_family	t_genus	t_species
@@ -122,24 +125,34 @@ anvi-import-taxonomy -c ${coassembly_sample_ID}_contigs.db \
 #### 6. Make relative abundance profiles
 # Get samples
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Mapping relative abundance profiles"
-cd ${output_dir}/02_mapping
+cd ${output_dir}/02_multi_mapping
 sample_names=($(find ${atlas_dir}/coassembly/${coassembly_sample_ID}/multi_mapping -name "*.bam" -type f))
 
 for sample in ${sample_names[@]}; do
 	sample_name=${sample##*/}
 	sample_name=${sample_name%.*}
-	
+	sample_name_simple=$(sed s/'-'/'_'/g <<<${sample_name}) # Get rid of dashes
+					
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Mapping ${sample_name}"
-	anvi-profile -i ${sample} -c ${coassembly_sample_ID}_contigs.db \
-					--output-dir ${sample_name} --sample-name ${sample_name} \
-					2>&1 | tee logs/anvi-profile_${sample_name}.log
+	
+	# Index BAM
+	anvi-init-bam -o ${sample_name_simple}.bam ${sample}
+	
+	# Generate profile
+	anvi-profile -i ${sample_name_simple}.bam -c ${output_dir}/${coassembly_sample_ID}_contigs.db \
+					--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} \
+					2>&1 | tee logs/anvi-profile_${sample_name_simple}.log
+	
+	# Remove indexed bam
+	rm ${sample_name_simple}.bam
+	
 done
 
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Merging information from mapped samples"
 cd ${output_dir}
-anvi-merge ${output_dir}/02_mapping/*/PROFILE.db -o ${coassembly_sample_ID}_samples_merged \
+anvi-merge ${output_dir}/02_multi_mapping/*/PROFILE.db -o ${coassembly_sample_ID}_samples_merged \
 				-c ${coassembly_sample_ID}_contigs.db --skip-concoct-binning \
-				2>&1 | tee misc_logs/anvi-merge_${sample_name}.log
+				2>&1 | tee misc_logs/anvi-merge.log
 
 #### 7. Import my bins
 # TODO - get my bin info into the proper format - 2 tables needed.
