@@ -1,21 +1,21 @@
-gene_callers_id	t_kingdom	t_phylum	t_class	t_order	t_family	t_genus	t_species	locus_tag	contig_id
-2	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae	Methylobacter		CA-L227-2014_00002	CA-L227-2014_19
-3	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae	Methylobacter		CA-L227-2014_00003	CA-L227-2014_19
-4	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae	Methylobacter		CA-L227-2014_00004	CA-L227-2014_19
-9	Bacteria	Proteobacteria	Betaproteobacteria	Burkholderiales				CA-L227-2014_00009	CA-L227-2014_57
-10	Bacteria	Proteobacteria	Betaproteobacteria	Burkholderiales				CA-L227-2014_00010	CA-L227-2014_57
-12	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae	Methylomonas		CA-L227-2014_00012	CA-L227-2014_58
-13	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae	Methylomonas		CA-L227-2014_00013	CA-L227-2014_58
-20	Bacteria	Acidobacteria	Holophagae	Holophagales	Holophagaceae	Holophaga	Holophaga foetida	CA-L227-2014_00020	CA-L227-2014_79
-27	Bacteria	Bacteroidetes						CA-L227-2014_00027	CA-L227-2014_83
-28	Bacteria	Bacteroidetes						CA-L227-2014_00028	CA-L227-2014_83
-36	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae			CA-L227-2014_00036	CA-L227-2014_89
-37	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae			CA-L227-2014_00037	CA-L227-2014_89
-39	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae			CA-L227-2014_00039	CA-L227-2014_89
-40	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae			CA-L227-2014_00040	CA-L227-2014_89
-41	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae			CA-L227-2014_00041	CA-L227-2014_89
-42	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae			CA-L227-2014_00042	CA-L227-2014_89
-43	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae			CA-L227-2014_00043	CA-L227-2014_89
-44	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae			CA-L227-2014_00044	CA-L227-2014_89
-45	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae			CA-L227-2014_00045	CA-L227-2014_89
-46	Bacteria	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae			CA-L227-2014_00046	CA-L227-2014_89
+gene_callers_id	t_phylum	t_class	t_order	t_family	t_genus	t_species
+2	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae	Methylobacter	
+3	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae	Methylobacter	
+4	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae	Methylobacter	
+9	Proteobacteria	Betaproteobacteria	Burkholderiales			
+10	Proteobacteria	Betaproteobacteria	Burkholderiales			
+12	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae	Methylomonas	
+13	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae	Methylomonas	
+20	Acidobacteria	Holophagae	Holophagales	Holophagaceae	Holophaga	Holophaga foetida
+27	Bacteroidetes					
+28	Bacteroidetes					
+36	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae		
+37	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae		
+39	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae		
+40	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae		
+41	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae		
+42	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae		
+43	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae		
+44	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae		
+45	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae		
+46	Proteobacteria	Gammaproteobacteria	Methylococcales	Methylococcaceae		
