@@ -152,12 +152,14 @@ summarize_contig_bin_mapping <- function(atlas_table) {
   # Collapse to unique entries
   mapping <- mapping[!duplicated(mapping),]
   
-  # Remove special characters
-  mapping_cleaned <- lapply(1:ncol(mapping), function(x) { remove_special_characters(mapping[,x]) })
-  names(mapping_cleaned) <- cols_to_grab
-  mapping_cleaned <- as.data.frame(dplyr::bind_cols(mapping_cleaned))
+  # # Remove special characters
+  # mapping_cleaned <- lapply(1:ncol(mapping), function(x) { remove_special_characters(mapping[,x]) })
+  # names(mapping_cleaned) <- cols_to_grab
+  # mapping <- as.data.frame(dplyr::bind_cols(mapping_cleaned))
   
-  return(mapping_cleaned)
+  mapping$bin_id <- remove_special_characters(mapping$bin_id)
+  
+  return(mapping)
   
   # Note: remember to export with no column names as required by anvi'o.
 }
