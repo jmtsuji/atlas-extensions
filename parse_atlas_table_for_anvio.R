@@ -138,14 +138,26 @@ parse_greengenes_taxonomy <- function(greengenes_entry_vector, contig_id, locus_
   
 }
 
+remove_special_characters <- function(input_vector) {
+  removed <- gsub(pattern = "[[:punct:]]", replacement = "_", x = input_vector, fixed = FALSE)
+  
+  return(removed)
+}
+
 summarize_contig_bin_mapping <- function(atlas_table) {
   # Get required columns
-  mapping <- atlas_table[,c("contig_id", "bin_id")]
+  cols_to_grab <- c("contig_id", "bin_id")
+  mapping <- atlas_table[,cols_to_grab]
   
   # Collapse to unique entries
   mapping <- mapping[!duplicated(mapping),]
   
-  return(mapping)
+  # Remove special characters
+  mapping_cleaned <- lapply(1:ncol(mapping), function(x) { remove_special_characters(mapping[,x]) })
+  names(mapping_cleaned) <- cols_to_grab
+  mapping_cleaned <- as.data.frame(dplyr::bind_cols(mapping_cleaned))
+  
+  return(mapping_cleaned)
   
   # Note: remember to export with no column names as required by anvi'o.
 }
@@ -156,6 +168,9 @@ summarize_bin_info <- function(atlas_table) {
   
   # Sort by name
   bin_info <- bin_info[order(bin_info)]
+  
+  # Remove special characters
+  bin_info <- remove_special_characters(bin_info)
   
   # Make data frame template
   bin_df <- data.frame("bin_id" = bin_info,
