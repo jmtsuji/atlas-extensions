@@ -68,6 +68,52 @@ function export_prokka_info {
 
 }
 
+function match_atlas_table_to_prokka_info {
+	# TODO - move variables to local (within function) instead of global
+	
+	cd ${output_dir}/01b_import_atlas_table
+	
+	# Get the final gene entry number in the prokka file
+	last_prokka_gene_ID=$(tail -n 1 ${output_dir}/01a_import_prokka/CA-L227-2014_gene_calls.txt | cut -d $'\t' -f 1)
+	
+	# Get the final gene entry number of the altas taxonomy file
+	last_atlas_gene_ID=$(tail -n 1 ${output_dir}/01b_import_atlas_table/${coassembly_sample_ID}_gene_taxonomy.tsv | cut -d $'\t' -f 1)
+
+	if [ ${last_prokka_gene_ID} = ${last_atlas_gene_ID} ]; then
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Prokka gene calls and ATLAS gene taxonomy annotations match in total numbers - good."
+		
+	elif [ ${last_prokka_gene_ID} < ${last_atlas_gene_ID} ]; then
+		
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: WARNING: prokka gene calls and ATLAS gene taxonomy annotations do NOT match in total numbers. Final prokka gene call ID is '${last_prokka_gene_ID}', but final ATLAS taxonomy gene annotation ID is '${last_atlas_gene_ID}'. This has been observed before possibly as an error in prokka while generating the GFF file (final entries are cut out?)."
+
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: To correct error, deleting gene IDs in ATLAS gene taxonomy file from after ${last_prokka_gene_ID} until ${last_atlas_gene_ID}. Keeping old (complete) gene taxonomy file as '${coassembly_sample_ID}_gene_taxonomy_ORIGINAL.tsv' but saving the new (truncated) gene taxonomy file over the original at '${coassembly_sample_ID}_gene_taxonomy.tsv'."
+		
+		# Find the line number in the altas gene taxonomy file where the 'last_prokka_gene_ID' is
+		atlas_tax_file="${output_dir}/01b_import_atlas_table/${coassembly_sample_ID}_gene_taxonomy.tsv"
+		
+		# First, do a sanity check that there is only one match to the prokka gene caller ID
+		num_hits=$(grep -c ^${last_prokka_gene_ID} ${atlas_tax_file})
+		if [ ${num_hits} = 1 ]; then
+			# Then get the line number if all looks okay.
+			matching_atlas_tax_line=$(grep -n ^${last_prokka_gene_ID} ${atlas_tax_file} | cut -d ":" -f 1)
+		else
+			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: Found duplicated entries in the atlas taxonomy table '${atlas_tax_file}'. ${num_hits} rows begin with '${last_prokka_gene_ID}' (should only be one row). Exiting..."
+			exit 1
+		fi
+		
+		# Keep backup of original taxonomy file but make a new truncated one for the remainder of the pipeline.
+		mv ${coassembly_sample_ID}_gene_taxonomy.tsv ${coassembly_sample_ID}_gene_taxonomy_ORIGINAL.tsv
+		head -n ${matching_atlas_tax_line} ${coassembly_sample_ID}_gene_taxonomy_ORIGINAL.tsv > ${coassembly_sample_ID}_gene_taxonomy.tsv
+		
+	elif [ ${last_prokka_gene_ID} > ${last_atlas_gene_ID} ]; then
+	
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: prokka gene calls and ATLAS gene taxonomy annotations do NOT match in total numbers. Final prokka gene call ID is '${last_prokka_gene_ID}', but final ATLAS taxonomy gene annotation ID is '${last_atlas_gene_ID}'. The case where the ATLAS annotations are truncated compared to the prokka annotations has not been seen before. Something could be wrong with your ALTAS inputs, or this could be an unknown bug. Exiting..."
+		exit 1
+	
+	fi
+	
+}
+
 function export_atlas_info {
 
 	cd ${output_dir}/01b_import_atlas_table
@@ -92,7 +138,8 @@ function export_atlas_info {
 					-t ${coassembly_sample_ID}_gene_taxonomy.tsv -c ${coassembly_sample_ID}_binning_results.tsv \
 					-b ${coassembly_sample_ID}_bins_info.tsv 2>&1 | tee parse_atlas_table_for_anvio.log
 
-	# TODO - deal with the differing length of the gene calls from the gff file versus the gene taxonomy
+	# Deal with the differing length of the gene calls from the gff file versus the gene taxonomy
+	match_atlas_table_to_prokka_info
 
 }
 
