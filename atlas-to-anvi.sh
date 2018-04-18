@@ -79,10 +79,10 @@ function match_atlas_table_to_prokka_info {
 	# Get the final gene entry number of the altas taxonomy file
 	last_atlas_gene_ID=$(tail -n 1 ${output_dir}/01b_import_atlas_table/${coassembly_sample_ID}_gene_taxonomy.tsv | cut -d $'\t' -f 1)
 
-	if [ ${last_prokka_gene_ID} = ${last_atlas_gene_ID} ]; then
+	if [ ${last_prokka_gene_ID} -eq ${last_atlas_gene_ID} ]; then
 		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Prokka gene calls and ATLAS gene taxonomy annotations match in total numbers - good."
 		
-	elif [ ${last_prokka_gene_ID} < ${last_atlas_gene_ID} ]; then
+	elif [ ${last_prokka_gene_ID} -lt ${last_atlas_gene_ID} ]; then
 		
 		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: WARNING: prokka gene calls and ATLAS gene taxonomy annotations do NOT match in total numbers. Final prokka gene call ID is '${last_prokka_gene_ID}', but final ATLAS taxonomy gene annotation ID is '${last_atlas_gene_ID}'. This has been observed before possibly as an error in prokka while generating the GFF file (final entries are cut out?)."
 
@@ -93,7 +93,7 @@ function match_atlas_table_to_prokka_info {
 		
 		# First, do a sanity check that there is only one match to the prokka gene caller ID
 		num_hits=$(grep -c ^${last_prokka_gene_ID} ${atlas_tax_file})
-		if [ ${num_hits} = 1 ]; then
+		if [ ${num_hits} -eq 1 ]; then
 			# Then get the line number if all looks okay.
 			matching_atlas_tax_line=$(grep -n ^${last_prokka_gene_ID} ${atlas_tax_file} | cut -d ":" -f 1)
 		else
@@ -105,7 +105,7 @@ function match_atlas_table_to_prokka_info {
 		mv ${coassembly_sample_ID}_gene_taxonomy.tsv ${coassembly_sample_ID}_gene_taxonomy_ORIGINAL.tsv
 		head -n ${matching_atlas_tax_line} ${coassembly_sample_ID}_gene_taxonomy_ORIGINAL.tsv > ${coassembly_sample_ID}_gene_taxonomy.tsv
 		
-	elif [ ${last_prokka_gene_ID} > ${last_atlas_gene_ID} ]; then
+	elif [ ${last_prokka_gene_ID} -gt ${last_atlas_gene_ID} ]; then
 	
 		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: prokka gene calls and ATLAS gene taxonomy annotations do NOT match in total numbers. Final prokka gene call ID is '${last_prokka_gene_ID}', but final ATLAS taxonomy gene annotation ID is '${last_atlas_gene_ID}'. The case where the ATLAS annotations are truncated compared to the prokka annotations has not been seen before. Something could be wrong with your ALTAS inputs, or this could be an unknown bug. Exiting..."
 		exit 1
