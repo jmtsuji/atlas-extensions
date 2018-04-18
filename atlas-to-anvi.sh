@@ -33,7 +33,7 @@ if [ $# == 0 ]
 fi
 
 # Example
-# atlas-to-anvi.sh "/Hippodrome/jmtsuji/180123_ELA111314_atlas_r1.0.22_plus_full" "CA-L227-2013" "${atlas_dir}/post-analysis/04_anvio/CA-L227-2013" 6 2>&1 | tee atlas-to-anvi.log
+# atlas-to-anvi.sh "/Hippodrome/jmtsuji/180123_ELA111314_atlas_r1.0.22_plus_full" "CA-L227-2013" "/Hippodrome/jmtsuji/180123_ELA111314_atlas_r1.0.22_plus_full/post-analysis/04_anvio/CA-L227-2013" 6 2>&1 | tee atlas-to-anvi.log
 
 # Set variables from user input:
 atlas_dir=$1
@@ -99,7 +99,7 @@ function export_prokka_info {
 
 	fi
 		
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting prokka functional gene annotations"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting prokka gene annotations"
 	python gff_parser.py ${atlas_dir}/coassembly/${coassembly_sample_ID}/annotation/prokka/${coassembly_sample_ID}.gff \
 					--gene-calls ${coassembly_sample_ID}_gene_calls.txt --annotation ${coassembly_sample_ID}_gene_annot.txt
 	# Script gives no log info.
@@ -112,7 +112,7 @@ function match_atlas_table_to_prokka_info {
 	cd ${output_dir}/01b_import_atlas_table
 	
 	# Get the final gene entry number in the prokka file
-	last_prokka_gene_ID=$(tail -n 1 ${output_dir}/01a_import_prokka/CA-L227-2014_gene_calls.txt | cut -d $'\t' -f 1)
+	last_prokka_gene_ID=$(tail -n 1 ${output_dir}/01a_import_prokka/${coassembly_sample_ID}_gene_calls.txt | cut -d $'\t' -f 1)
 	
 	# Get the final gene entry number of the altas taxonomy file
 	last_atlas_gene_ID=$(tail -n 1 ${output_dir}/01b_import_atlas_table/${coassembly_sample_ID}_gene_taxonomy.tsv | cut -d $'\t' -f 1)
