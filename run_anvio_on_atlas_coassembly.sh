@@ -136,22 +136,24 @@ for sample in ${sample_names[@]}; do
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Mapping ${sample_name}"
 	
 	# Index BAM
-	anvi-init-bam -o ${sample_name_simple}.bam ${sample}
+	#anvi-init-bam -o ${sample_name_simple}.bam ${sample}
+	samtools sort -o ${sample_name_simple}.bam -@ ${threads} -m 4G ${sample}
+	samtools index -b -@ ${threads} ${sample_name_simple}.bam
 	
 	# Generate profile
 	anvi-profile -i ${sample_name_simple}.bam -c ${output_dir}/${coassembly_sample_ID}_contigs.db \
-					--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} \
+					--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} -T ${threads} \
 					2>&1 | tee logs/anvi-profile_${sample_name_simple}.log
 	
-	# Remove indexed bam
-	rm ${sample_name_simple}.bam
+	## Remove indexed bam
+	# rm ${sample_name_simple}.bam ${sample_name_simple}.bam.bai
 	
 done
 
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Merging information from mapped samples"
 cd ${output_dir}
 anvi-merge ${output_dir}/02_multi_mapping/*/PROFILE.db -o ${coassembly_sample_ID}_samples_merged \
-				-c ${coassembly_sample_ID}_contigs.db --skip-concoct-binning \
+				-c ${coassembly_sample_ID}_contigs.db --skip-concoct-binning --S metabat2 \
 				2>&1 | tee misc_logs/anvi-merge.log
 
 #### 7. Import my bins
@@ -161,7 +163,7 @@ echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing bin info from ATLAS"
 cd ${output_dir}
 anvi-import-collection 01b_import_atlas_table/${coassembly_sample_ID}_binning_results.tsv \
 				-p ${coassembly_sample_ID}_samples_merged/PROFILE.db \
-				-c ${coassembly_sample_ID}_contigs.db --source "metabat2" --contigs-mode \
+				-c ${coassembly_sample_ID}_contigs.db -C "metabat2" --contigs-mode \
 				--bins-info 01b_import_atlas_table/${coassembly_sample_ID}_bins_info.tsv \
 				2>&1 | tee misc_logs/anvi-import-collection.log
 
