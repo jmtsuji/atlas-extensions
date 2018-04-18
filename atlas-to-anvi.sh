@@ -32,11 +32,14 @@ if [ $# == 0 ]
     exit 1
 fi
 
+# Example
+# atlas-to-anvi.sh "/Hippodrome/jmtsuji/180123_ELA111314_atlas_r1.0.22_plus_full" "CA-L227-2013" "${atlas_dir}/post-analysis/04_anvio/CA-L227-2013" 6 2>&1 | tee $(basename $0 .sh).log
+
 # Set variables from user input:
-atlas_dir=$1 # "/Hippodrome/jmtsuji/180123_ELA111314_atlas_r1.0.22_plus_full"
-coassembly_sample_ID=$2 # "CA-L227-2014"
-output_dir=$3 # "${atlas_dir}/post_analysis/04_anvio"
-threads=$4 # 6
+atlas_dir=$1
+coassembly_sample_ID=$2
+output_dir=$3
+threads=$4
 
 function export_prokka_info {
 	cd ${output_dir}/01a_import_prokka
