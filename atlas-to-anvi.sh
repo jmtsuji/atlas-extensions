@@ -41,6 +41,41 @@ coassembly_sample_ID=$2
 output_dir=$3
 threads=$4
 
+function test_inputs {
+
+	if [ ! -d ${atlas_dir} ]; then
+	
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: atlas_dir directory '${atlas_dir}' does not exist. Is your atlas_dir correct? Exiting..."
+		exit 1
+	
+	fi
+	
+	
+	if [ ! -d ${atlas_dir}/coassembly ]; then
+	
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: directory '${atlas_dir}/coassembly' does not exist. Have you run atlas-coassembly? Exiting..."
+		exit 1
+	
+	fi
+
+
+	if [ ! -d ${atlas_dir}/coassembly/${coassembly_sample_ID} ]; then
+	
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: directory '${atlas_dir}/coassembly/${coassembly_sample_ID}' does not exist. Is your coassembly_sample_ID '${coassembly_sample_ID}' correct? Exiting..."
+		exit 1
+	
+	fi
+	
+	
+	if [ -d ${output_dir} ]; then
+	
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: directory '${output_dir}' already exists. Please delete before starting this script (if you don't care about the data in that folder), or choose a different output directory. Exiting..."
+		exit 1
+	
+	fi
+
+}
+
 function export_prokka_info {
 	cd ${output_dir}/01a_import_prokka
 
@@ -300,7 +335,17 @@ function main {
 
 	# Get date and time of start
 	start_time=$(date)
+	
+	# Report settings
+	echo "Run settings:"
+	echo "atlas_dir: ${atlas_dir}"
+	echo "coassembly_sample_ID: ${coassembly_sample_ID}"
+	echo "output_dir: ${output_dir}"
+	echo "threads: ${threads}"
+	echo ""
 
+	test_inputs
+	
 	# Make needed output directories
 	mkdir -p ${output_dir}/01a_import_prokka ${output_dir}/01b_import_atlas_table ${output_dir}/02_multi_mapping/logs ${output_dir}/misc_logs
 
