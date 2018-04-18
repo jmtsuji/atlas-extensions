@@ -33,7 +33,7 @@ if [ $# == 0 ]
 fi
 
 # Example
-# atlas-to-anvi.sh "/Hippodrome/jmtsuji/180123_ELA111314_atlas_r1.0.22_plus_full" "CA-L227-2013" "${atlas_dir}/post-analysis/04_anvio/CA-L227-2013" 6 2>&1 | tee $(basename $0 .sh).log
+# atlas-to-anvi.sh "/Hippodrome/jmtsuji/180123_ELA111314_atlas_r1.0.22_plus_full" "CA-L227-2013" "${atlas_dir}/post-analysis/04_anvio/CA-L227-2013" 6 2>&1 | tee atlas-to-anvi.log
 
 # Set variables from user input:
 atlas_dir=$1
