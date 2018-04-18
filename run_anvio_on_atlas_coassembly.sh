@@ -1,22 +1,42 @@
 #!/usr/bin/env bash
 set -euo pipefail
+script_version="1.0.22-coassembly-r4-dev" # to match ATLAS version it is designed to work with
 
-# Running anvi'o from atlas-coassembly output
-# Jackson M. Tsuji, Neufeld lab (Apr. 10, 2018)_
+# atlas-to-anvi
+# Copyright Jackson M. Tsuji, 2018
+# Neufeld lab, University of Waterloo, Canada
+# Created Apr. 10, 2018
+# Description: Imports ATLAS-coassembly output into anvio for manual bin refinement, for a specific coassembly sample.
+# REQUIRES that ATLAS coassembly (via atlas-extensions version 1.0.22-coassembly-r3) has been run and that the desired sample is in the 'coassembly' directory within the ATLAS run folder.
 # All based off the Anvi'o metagenomics tutorial at http://merenlab.org/2016/06/22/anvio-tutorial-v2/ (etc.)
-# Recommended to start from within a conda env
-# Still rough code!!
 
-# User-defined variables
-# TODO - should be defined as input to script
-atlas_dir="/Hippodrome/jmtsuji/180123_ELA111314_atlas_r1.0.22_plus_full" # with "coassembly" dir inside
-coassembly_sample_ID="CA-L227-2014"
-output_dir="${atlas_dir}/post_analysis/04_anvio"
-threads=6
+# # Recommended to start from within a conda env, e.g.,
+# conda create -y -n anvio4 python=3
+# conda install -y -n anvio4 -c bioconda -c conda-forge anvio=4
+# source activate anvio4
 
-# Hard-coded variables
-#cogs_data_dir="/Hippodrome/anvio/databases/COG"
-#cogs_data_dir="/Winnebago/jmtsuji/miniconda2/envs/anvio4/lib/python3.6/site-packages/anvio/data/misc/COG"
+# If no input is provided, provide help and exit
+if [ $# == 0 ]
+    then
+    printf "$(basename $0): Imports ATLAS-coassembly output into anvio for manual bin refinement. Early development version.\n"
+    printf "Version: ${script_version}\n"
+    printf "Contact Jackson M. Tsuji (jackson.tsuji@uwaterloo.ca) for bug reports or feature requests.\n\n"
+    printf "Usage: $(basename $0) atlas_dir coassembly_sample_ID output_dir threads 2>&1 | tee $(basename $0 .sh).log\n\n"
+    printf "Usage details:\n"
+    printf "1. atlas_dir: Path to the base directory where ATLAS files were output.\n"
+    printf "2. coassembly_sample_ID: Exact name of the coassembly that you desire to visualize bins from. MUST be a sample within the 'coassembly' directory in the 'atlas_dir' folder.\n"
+    printf "3. output_dir: Path to save the anvio database and associated files to.\n"
+    printf "4. threads: number of threads to run.\n\n"
+    printf "Additional usage notes:\n"
+    printf "* REQUIREMENTS: supports coassembly output from atlas-extensions version '1.0.22-coassembly-r3', although you do not need to have the requirements for the ATLAS coassembly extension to run this script. Must have anvio4 installed (ideally via conda). Must have the Anvi'o COG database set up via 'anvi-setup-ncbi-cogs'. Also, need R and an internet connection.\n"
+    exit 1
+fi
+
+# Set variables from user input:
+atlas_dir=$1 # "/Hippodrome/jmtsuji/180123_ELA111314_atlas_r1.0.22_plus_full"
+coassembly_sample_ID=$2 # "CA-L227-2014"
+output_dir=$3 # "${atlas_dir}/post_analysis/04_anvio"
+threads=$4 # 6
 
 function export_prokka_info {
 	cd ${output_dir}/01a_import_prokka
@@ -222,28 +242,41 @@ function import_custom_bins {
 
 function main {
 
-# Make needed output directories
-mkdir -p ${output_dir}/01a_import_prokka ${output_dir}/01b_import_atlas_table ${output_dir}/02_multi_mapping/logs ${output_dir}/misc_logs
+	echo "Running $(basename $0), version ${script_version}, on $(date)."
+	echo ""
 
-export_prokka_info
-export_atlas_info
+	# Get date and time of start
+	start_time=$(date)
 
-generate_contig_database
+	# Make needed output directories
+	mkdir -p ${output_dir}/01a_import_prokka ${output_dir}/01b_import_atlas_table ${output_dir}/02_multi_mapping/logs ${output_dir}/misc_logs
 
-add_hmm_annotations
-add_cog_annotations
-import_atlas_annotations
+	# Get relevant annotations from the ATLAS run
+	export_prokka_info
+	export_atlas_info
 
-make_read_mapping_profiles
-merge_read_mapping_profiles
+	# Create the database
+	generate_contig_database
 
-import_custom_bins
+	# Annotate the database
+	add_hmm_annotations
+	add_cog_annotations
+	import_atlas_annotations
 
-# Exit and report anvi-interative instructions to user
-echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Pipeline finished."
-printf "\nTo visualize, please run:\n"
-printf "cd ${output_dir}\n"
-printf "anvi-interactive -p ${coassembly_sample_ID}_samples_merged/PROFILE.db -c ${coassembly_sample_ID}_contigs.db -C metabat2 --server-only -P 8080\n\n"
+	# Add read mapping information to the database
+	make_read_mapping_profiles
+	merge_read_mapping_profiles
+
+	# Import bins
+	import_custom_bins
+	
+	end_time=$(date)
+
+	# Exit and report anvi-interative instructions to user
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: $(basename $0): complete. Started at ${start_time} and finished at ${end_time}."
+	printf "\nTo visualize, please run:\n"
+	printf "cd ${output_dir}\n"
+	printf "anvi-interactive -p ${coassembly_sample_ID}_samples_merged/PROFILE.db -c ${coassembly_sample_ID}_contigs.db -C metabat2 --server-only -P 8080\n\n"
 
 }
 
