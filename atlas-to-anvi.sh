@@ -196,18 +196,21 @@ function add_cog_annotations {
 }
 
 function import_atlas_annotations {
-
-	#### Import functional and taxonomic info
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing functional annotations from prokka"
 	cd ${output_dir}
-	anvi-import-functions -c ${coassembly_sample_ID}_contigs.db \
-					-i ${output_dir}/01a_import_prokka/${coassembly_sample_ID}_gene_annot.txt \
-					2>&1 | tee misc_logs/anvi-import-functions.log
+
+	# TODO - get past the error within anvi'o where this seems incompatible with COG annotations. Skipping for now.
+	#### Import functional info
+	#echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing functional annotations from prokka"
+	#anvi-import-functions -c ${coassembly_sample_ID}_contigs.db \
+	#				-i ${output_dir}/01a_import_prokka/${coassembly_sample_ID}_gene_annot.txt \
+	#				2>&1 | tee misc_logs/anvi-import-functions.log
 
 	## Example table
 	# gene_callers_id	source	accession	function	e_value
 	# 1	Pfam	PF01132	Elongation factor P (EF-P) OB domain	4e-23
 
+	
+	#### Import taxonomy info
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing taxonomic gene classifications from ATLAS"
 	anvi-import-taxonomy -c ${coassembly_sample_ID}_contigs.db \
 					-i 01b_import_atlas_table/${coassembly_sample_ID}_gene_taxonomy.tsv \
