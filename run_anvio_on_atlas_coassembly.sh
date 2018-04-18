@@ -12,15 +12,14 @@ set -euo pipefail
 atlas_dir="/Hippodrome/jmtsuji/180123_ELA111314_atlas_r1.0.22_plus_full" # with "coassembly" dir inside
 coassembly_sample_ID="CA-L227-2014"
 output_dir="${atlas_dir}/post_analysis/04_anvio"
-threads=12
+threads=6
 
 # Hard-coded variables
 #cogs_data_dir="/Hippodrome/anvio/databases/COG"
 #cogs_data_dir="/Winnebago/jmtsuji/miniconda2/envs/anvio4/lib/python3.6/site-packages/anvio/data/misc/COG"
 
 # Make needed output directories
-mkdir -p ${output_dir}/01a_import_prokka ${output_dir}/01b_import_atlas_table \
-				${output_dir}/02_multi_mapping/logs ${output_dir}/misc_logs
+mkdir -p ${output_dir}/01a_import_prokka ${output_dir}/01b_import_atlas_table ${output_dir}/02_multi_mapping/logs ${output_dir}/misc_logs
 
 ## Test if COGs database exists
 # TODO - finish
@@ -30,39 +29,58 @@ mkdir -p ${output_dir}/01a_import_prokka ${output_dir}/01b_import_atlas_table \
 #fi
 
 #### 1a. Import prokka info
-echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting prokka functional gene annotations"
 cd ${output_dir}/01a_import_prokka
 
 if [ ! -f gff_parser.py ]; then
-	"[$(date '+%y%m%d %H:%M:%S %Z')]: Installing gff_parser.py because it is not already present in the run folder"
-	wget https://raw.githubusercontent.com/karkman/gff_parser/master/gff_parser.py -O gff_parser.py
-	# TODO - make silent
+	
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Installing gff_parser.py because it is not already present in the run folder."
+	wget --quiet -O gff_parser.py https://raw.githubusercontent.com/karkman/gff_parser/master/gff_parser.py
+	# Consider removing '--quiet' flag from wget in case helpful for logging
+	
 fi
 
-# TODO - check if already installed
-pip install gffutils
+# Install gffutils if not installed
+if pip list 2>/dev/null | grep -q gffutils; then
 
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Python package 'gffutils' is already installed; will not re-install."	
+	
+else
+	
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Installing python package 'gffutils' via pip because it is not already installed."
+	pip install --quiet gffutils
+
+fi
+	
+echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting prokka functional gene annotations"
 python gff_parser.py ${atlas_dir}/coassembly/${coassembly_sample_ID}/annotation/prokka/${coassembly_sample_ID}.gff \
-				--gene-calls ${coassembly_sample_ID}_gene_calls.txt \
-				--annotation ${coassembly_sample_ID}_gene_annot.txt 2>&1 | tee gff_parser.log
+				--gene-calls ${coassembly_sample_ID}_gene_calls.txt --annotation ${coassembly_sample_ID}_gene_annot.txt
+# Script gives no log info.
 
 
 #### 1b. Import ATLAS table info
-echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting information from the ATLAS annotations table"
 cd ${output_dir}/01b_import_atlas_table
 
 if [ ! -f parse_atlas_table_for_anvio.R ]; then
+
 	# TODO - do this with proper version control
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Installing parse_atlas_table_for_anvio.R because it is not already present in the run folder"
-	git clone https://github.com/jmtsuji/atlas-extensions.git
+	git clone --quiet https://github.com/jmtsuji/atlas-extensions.git
 	mv atlas-extensions/parse_atlas_table_for_anvio.R .
 	rm -rf atlas-extensions
 	chmod 755 parse_atlas_table_for_anvio.R
+	
+else
+
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: 'parse_atlas_table_for_anvio.R' is already present in the run folder; will not re-install."
+	
 fi
 
+echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting information from the ATLAS annotations table"
 ./parse_atlas_table_for_anvio.R -a ${atlas_dir}/coassembly/${coassembly_sample_ID}/${coassembly_sample_ID}_annotations_multi_mapped.txt \
 				-t ${coassembly_sample_ID}_gene_taxonomy.tsv -c ${coassembly_sample_ID}_binning_results.tsv \
 				-b ${coassembly_sample_ID}_bins_info.tsv 2>&1 | tee parse_atlas_table_for_anvio.log
+
+# TODO - deal with the differing length of the gene calls from the gff file versus the gene taxonomy
 
 
 #### 2. Generate contigs database
@@ -71,7 +89,7 @@ cd ${output_dir}
 anvi-gen-contigs-database -f ${atlas_dir}/coassembly/${coassembly_sample_ID}/${coassembly_sample_ID}_contigs.fasta \
 				-o ${coassembly_sample_ID}_contigs.db -n ${coassembly_sample_ID}_contigs_db \
 				--external-gene-calls ${output_dir}/01a_import_prokka/${coassembly_sample_ID}_gene_calls.txt \
-				--ignore-internal-stop-codons 2>&1 | tee misc_logs/anvi-gen-contigs-database.log
+				--ignore-internal-stop-codons --split-length -1 2>&1 | tee misc_logs/anvi-gen-contigs-database.log
 
 ## Example table
 # gene_callers_id	contig	start	stop	direction	partial	source	version
@@ -109,12 +127,10 @@ anvi-import-functions -c ${coassembly_sample_ID}_contigs.db \
 # gene_callers_id	source	accession	function	e_value
 # 1	Pfam	PF01132	Elongation factor P (EF-P) OB domain	4e-23
 
-# TODO - format ATLAS annotations table into the input matrix. Need to parse Greengenes.
 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing taxonomic gene classifications from ATLAS"
 anvi-import-taxonomy -c ${coassembly_sample_ID}_contigs.db \
 				-i 01b_import_atlas_table/${coassembly_sample_ID}_gene_taxonomy.tsv \
-				-p default_matrix 2>&1 | tee misc_logs/anvi-import-taxonomy
-# TODO - Some problems -- the gffparse file seems to be missing the bottom rows! Perhaps the output of my R script is correct but gffparse OR the gff file itself contains an error.
+				-p default_matrix 2>&1 | tee misc_logs/anvi-import-taxonomy.log
 
 ## Example table
 # gene_callers_id	t_phylum	t_class	t_order	t_family	t_genus	t_species
@@ -132,25 +148,26 @@ for sample in ${sample_names[@]}; do
 	sample_name=${sample##*/}
 	sample_name=${sample_name%.*}
 	sample_name_simple=$(sed s/'-'/'_'/g <<<${sample_name}) # Get rid of dashes
-					
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Mapping ${sample_name}"
 	
 	# Index BAM
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: sorting and indexing BAM"
 	#anvi-init-bam -o ${sample_name_simple}.bam ${sample}
 	samtools sort -o ${sample_name_simple}.bam -@ ${threads} -m 4G ${sample}
 	samtools index -b -@ ${threads} ${sample_name_simple}.bam
 	
 	# Generate profile
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile"
 	anvi-profile -i ${sample_name_simple}.bam -c ${output_dir}/${coassembly_sample_ID}_contigs.db \
 					--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} -T ${threads} \
-					2>&1 | tee logs/anvi-profile_${sample_name_simple}.log
+					--min-contig-length 1000 2>&1 | tee logs/anvi-profile_${sample_name_simple}.log
 	
+	# TODO - uncomment this once the code seems to be working reliably.
 	## Remove indexed bam
 	# rm ${sample_name_simple}.bam ${sample_name_simple}.bam.bai
 	
 done
 
-echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Merging information from mapped samples"
+echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Merging information from mapped samples into contig database"
 cd ${output_dir}
 anvi-merge ${output_dir}/02_multi_mapping/*/PROFILE.db -o ${coassembly_sample_ID}_samples_merged \
 				-c ${coassembly_sample_ID}_contigs.db --skip-concoct-binning --S metabat2 \
