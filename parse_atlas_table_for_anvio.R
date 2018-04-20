@@ -139,8 +139,12 @@ parse_greengenes_taxonomy <- function(greengenes_entry_vector, contig_id, locus_
     df_trunc$locus_tag <- NULL
     df_trunc$contig_id <- NULL
     
-    # Return the full table for testing and the truncated table for anvio
-    return(list(df_trunc, df))
+    # TODO - add support for this code
+    # # Return the full table for testing and the truncated table for anvio
+    # return(list(df_trunc, df))
+    
+    # For now, for simplicity, only return the truncated table for anvio
+    return(df_trunc)
   }
   
 }
