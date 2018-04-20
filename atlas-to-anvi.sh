@@ -300,6 +300,7 @@ function merge_read_mapping_profiles {
 	anvi-merge ${output_dir}/02_multi_mapping/*/PROFILE.db -o ${coassembly_sample_ID}_samples_merged \
 					-c ${coassembly_sample_ID}_contigs.db --skip-concoct-binning -S metabat2 \
 					2>&1 | tee misc_logs/anvi-merge.log
+	# Consider '--enforce-hierarchical-clustering' to cluster even with > 25,000 contigs. But could take a long time...
 
 }
 
@@ -325,6 +326,19 @@ function import_custom_bins {
 	# Bin_2	UNKNOWN_SOURCE	#2244FF
 	# Bin_3	UNKNOWN_SOURCE	#22FF44
 	# Bin_4	UNKNOWN_SOURCE	#44FFFF
+
+}
+
+function summarize {
+
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Summarizing anvio binning statistics"
+	cd ${output_dir}
+	anvi-summarize -p ${coassembly_sample_ID}_samples_merged/PROFILE.db \
+					-c ${coassembly_sample_ID}_contigs.db -C metabat2 \
+					-o ${coassembly_sample_ID}_summary --taxonomic-level t_genus \
+					--init-gene-coverages 2>&1 | tee misc_logs/anvi-summarize.log
+	# Note: '--init-gene-coverages' takes a long time to run.
+	# Note: consider '--quick-summary' for faster run with with more minimal output.
 
 }
 
@@ -367,6 +381,9 @@ function main {
 
 	# Import bins
 	import_custom_bins
+	
+	# Generate summary
+	summarize
 	
 	end_time=$(date)
 
