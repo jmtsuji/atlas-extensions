@@ -106,6 +106,7 @@ function export_prokka_info {
 
 }
 
+## TODO - add a different sanity check. Function in its current form does not work if genes without taxonomic assignment are at the end of the file...
 function match_atlas_table_to_prokka_info {
 	# TODO - move variables to local (within function) instead of global
 	
@@ -174,10 +175,11 @@ function export_atlas_info {
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting information from the ATLAS annotations table"
 	./parse_atlas_table_for_anvio.R -a ${atlas_dir}/coassembly/${coassembly_sample_ID}/${coassembly_sample_ID}_annotations_multi_mapped.txt \
 					-t ${coassembly_sample_ID}_gene_taxonomy.tsv -c ${coassembly_sample_ID}_binning_results.tsv \
-					-b ${coassembly_sample_ID}_bins_info.tsv 2>&1 | tee parse_atlas_table_for_anvio.log
+					-b ${coassembly_sample_ID}_bins_info.tsv 2>&1 -@ ${threads} | tee parse_atlas_table_for_anvio.log
 
-	# Deal with the differing length of the gene calls from the gff file versus the gene taxonomy
-	match_atlas_table_to_prokka_info
+	# TODO - add a different sanity check. Function in its current form does not work if genes without taxonomic assignment are at the end of the file...
+	## Deal with the differing length of the gene calls from the gff file versus the gene taxonomy
+	# match_atlas_table_to_prokka_info
 
 }
 
