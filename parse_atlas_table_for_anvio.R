@@ -91,7 +91,7 @@ parse_taxonomy_preface <- function(taxonomy_rank_entry) {
   return(split)
 }
 
-parse_greengenes_taxonomy <- function(greengenes_entry_vector, contig_id, locus_tag) { 
+parse_greengenes_taxonomy <- function(greengenes_entry_vector, row_num, contig_id, locus_tag) { 
   # E.g., greengenes_entry_vector <- "k__Bacteria;p__Proteobacteria;c__Gammaproteobacteria;o__Methylococcales;f__Methylococcaceae;g__Methylobacter;s__?"
   # locus_tag <- "CA-L227-2014_00003"
   # Output is that single line formatted as a data frame matching Anvi'o's specifications.
@@ -118,7 +118,7 @@ parse_greengenes_taxonomy <- function(greengenes_entry_vector, contig_id, locus_
     # Renumber numerically for gene_callers_id
     # Note: NOT exactly the same as the locus_tag ID!
     # TODO - add a check that the ATLAS table is sorted ahead of time.
-    gene_callers_id <- seq(1:nrow(df))
+    gene_callers_id <- row_num
     
     # # Parse locus_tag to get gene_callers_id
     # gene_callers_id <- strsplit(locus_tag, split = "_")[[1]]
@@ -215,7 +215,7 @@ main <- function() {
   
   # Make the taxonomy table
   cat("Parsing taxonomy\n")
-  parsed_tax <- lapply(1:nrow(atlas_table), function(x) { parse_greengenes_taxonomy(greengenes_entry_vector = atlas_table[x,9], 
+  parsed_tax <- lapply(1:nrow(atlas_table), function(x) { parse_greengenes_taxonomy(greengenes_entry_vector = atlas_table[x,9], row_num = x, 
                                                                                     contig_id = atlas_table[x,1], locus_tag = atlas_table[x,2]) })
   parsed_tax <- dplyr::bind_rows(parsed_tax)
   
