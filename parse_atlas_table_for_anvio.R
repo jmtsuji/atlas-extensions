@@ -21,6 +21,7 @@ if (RUN_COMMAND_LINE == FALSE) {
 #####################################################
 ## Load required packages: ##########################
 library(getopt)
+library(parallel)
 library(plyr)
 suppressMessages(library(dplyr))
 #####################################################
@@ -37,6 +38,7 @@ parse_command_line_input <- function() {
                      'output_tax_file', 't', 1, "character",
                      'output_contig_bin_file', 'c', 1, "character",
                      'output_bin_info_file', 'b', 1, "character",
+                     'threads', '@', 2, "numeric",
                      'help', 'h', 2, "character"), byrow=TRUE, ncol=4)
   
   opt <- getopt(params)
@@ -56,7 +58,8 @@ parse_command_line_input <- function() {
     cat("Details:\n", "--atlas_table\t\t\tFilepath for TSV-format ATLAS annotations table. [Required]\n",
         "--output_tax_file\t\tFilepath for output TSV-format gene-specific taxonomy file. [Required]\n",
         "--output_contig_bin_file\t\tFilepath for output TSV-format summary file of contig assignmen to bins. [Required]\n",
-        "--output_bin_info_file\t\t\tFilepath for output TSV-format summary file of bin IDs with CheckM taxonomy - colours can be modified by user. [Required]\n\n")
+        "--output_bin_info_file\t\t\tFilepath for output TSV-format summary file of bin IDs with CheckM taxonomy - colours can be modified by user. [Required]\n",
+        "--threads\t\t\tNumber of threads to use when parsing taxonomy [Optional; default = 1]\n\n")
     
     quit(status = 1)
   }
@@ -75,11 +78,17 @@ parse_command_line_input <- function() {
     stop("Output bin info filepath required. Try -h for help message.")
   }
   
+  # Assign default for threads if nothing provided
+  if ( is.null(opt$threads) ) {
+    opt$threads <- 1
+  }
+  
   # Make variables from provided input and save as global variables (<<-)
   atlas_table_filename <<- opt$atlas_table
   output_tax_filename <<- opt$output_tax_file
   output_contig_bin_filename <<- opt$output_contig_bin_file
   output_bin_info_filename <<- opt$output_bin_info_file
+  threads <<- opt$threads
   
 }
 
@@ -207,6 +216,7 @@ main <- function() {
   cat(paste("Output taxonomy filepath:", output_tax_filename, "\n"))
   cat(paste("Output contig/bin summary filepath:", output_contig_bin_filename, "\n"))
   cat(paste("Output bin info template filepath:", output_bin_info_filename, "\n"))
+  cat(paste("Threads:", threads, "\n"))
   cat("\n")
   
   # Read the table
@@ -215,8 +225,9 @@ main <- function() {
   
   # Make the taxonomy table
   cat("Parsing taxonomy\n")
-  parsed_tax <- lapply(1:nrow(atlas_table), function(x) { parse_greengenes_taxonomy(greengenes_entry_vector = atlas_table[x,9], row_num = x, 
-                                                                                    contig_id = atlas_table[x,1], locus_tag = atlas_table[x,2]) })
+  parsed_tax <- mclapply(1:nrow(atlas_table), function(x) { parse_greengenes_taxonomy(greengenes_entry_vector = atlas_table[x,9], row_num = x, 
+                                                                                    contig_id = atlas_table[x,1], locus_tag = atlas_table[x,2]) },
+                         mc.cores = threads)
   parsed_tax <- dplyr::bind_rows(parsed_tax)
   
   # Make the contig-bin mapping file
