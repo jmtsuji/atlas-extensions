@@ -393,7 +393,9 @@ function main {
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: $(basename $0): complete. Started at ${start_time} and finished at ${end_time}."
 	printf "\nTo visualize, please run:\n"
 	printf "cd ${output_dir}\n"
-	printf "anvi-interactive -p ${coassembly_sample_ID}_samples_merged/PROFILE.db -c ${coassembly_sample_ID}_contigs.db -C metabat2 --server-only -P 8080\n\n"
+	printf "anvi-interactive -p ${coassembly_sample_ID}_samples_merged/PROFILE.db -c ${coassembly_sample_ID}_contigs.db -C metabat2 --server-only -P 8080\n"
+	printf "bin_name=[name_of_interest]"
+	printf "anvi-refine -p ${coassembly_sample_ID}_samples_merged/PROFILE.db -c ${coassembly_sample_ID}_contigs.db -C metabat2 -b ${bin_name} --taxonomic-level t_genus --title ${bin_name} -P 8080 --server-only"
 
 }
 
