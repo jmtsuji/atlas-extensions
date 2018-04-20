@@ -298,7 +298,7 @@ function merge_read_mapping_profiles {
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Merging information from mapped samples into contig database"
 	cd ${output_dir}
 	anvi-merge ${output_dir}/02_multi_mapping/*/PROFILE.db -o ${coassembly_sample_ID}_samples_merged \
-					-c ${coassembly_sample_ID}_contigs.db --skip-concoct-binning --S metabat2 \
+					-c ${coassembly_sample_ID}_contigs.db --skip-concoct-binning -S metabat2 \
 					2>&1 | tee misc_logs/anvi-merge.log
 
 }
