@@ -115,9 +115,14 @@ parse_greengenes_taxonomy <- function(greengenes_entry_vector, contig_id, locus_
     df$locus_tag <- locus_tag
     df$contig_id <- contig_id
     
-    # Parse locus_tag to get gene_callers_id
-    gene_callers_id <- strsplit(locus_tag, split = "_")[[1]]
-    gene_callers_id <- as.numeric(gene_callers_id[length(gene_callers_id)])
+    # Renumber numerically for gene_callers_id
+    # Note: NOT exactly the same as the locus_tag ID!
+    # TODO - add a check that the ATLAS table is sorted ahead of time.
+    gene_callers_id <- seq(1:nrow(df))
+    
+    # # Parse locus_tag to get gene_callers_id
+    # gene_callers_id <- strsplit(locus_tag, split = "_")[[1]]
+    # gene_callers_id <- as.numeric(gene_callers_id[length(gene_callers_id)])
     
     # Add to table and re-arrange for clarity
     df$gene_callers_id <- gene_callers_id
@@ -129,11 +134,13 @@ parse_greengenes_taxonomy <- function(greengenes_entry_vector, contig_id, locus_
     }
     
     # Bring column number down to Anvi'o requirements
-    df$t_kingdom <- NULL
-    df$locus_tag <- NULL
-    df$contig_id <- NULL
+    df_trunc <- df
+    df_trunc$t_kingdom <- NULL
+    df_trunc$locus_tag <- NULL
+    df_trunc$contig_id <- NULL
     
-    return(df)
+    # Return the full table for testing and the truncated table for anvio
+    return(list(df_trunc, df))
   }
   
 }
