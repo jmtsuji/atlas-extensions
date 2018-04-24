@@ -290,9 +290,8 @@ function make_read_mapping_profiles {
 						--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} -T ${threads} \
 						--min-contig-length 1000 2>&1 | tee logs/anvi-profile_${sample_name_simple}.log
 		
-		# TODO - uncomment this once the code seems to be working reliably.
-		## Remove indexed bam
-		# rm ${sample_name_simple}.bam ${sample_name_simple}.bam.bai
+		# Remove indexed bam
+		rm ${sample_name_simple}.bam ${sample_name_simple}.bam.bai
 		
 	done
 
