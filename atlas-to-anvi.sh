@@ -277,9 +277,12 @@ function make_read_mapping_profiles {
 		
 		# Index BAM
 		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: sorting and indexing BAM"
-		#anvi-init-bam -o ${sample_name_simple}.bam ${sample}
-		samtools sort -o ${sample_name_simple}.bam -@ ${threads} -m 4G ${sample}
+		#anvi-init-bam -o ${sample_name_simple}.bam ${sample} # TODO - delete this step. Can use samtools directly instead for better efficiency.
+		#samtools sort -o ${sample_name_simple}.bam -@ ${threads} -m 4G ${sample} # TODO - sort already done in ATLAS. Delete this step.
+		
+		cp ${sample} ${sample_name_simple}.bam
 		samtools index -b -@ ${threads} ${sample_name_simple}.bam
+		# TODO - 'cp' step above: consider a more efficient way to do this long-term. I would just run the index step on the original ${sample}, but it might be in a write-protected directory. However, it seems inefficient to copy such large files (this is also hard on the disk).
 		
 		# Generate profile
 		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile"
