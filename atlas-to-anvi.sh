@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-script_version="1.0.22-coassembly-r4-dev" # to match ATLAS version it is designed to work with
+script_version="1.0.22-coassembly-r4-dev2" # to match ATLAS version it is designed to work with
 
 # atlas-to-anvi
 # Copyright Jackson M. Tsuji, 2018
@@ -21,14 +21,22 @@ if [ $# == 0 ]
     printf "$(basename $0): Imports ATLAS-coassembly output into anvio for manual bin refinement. Early development version.\n"
     printf "Version: ${script_version}\n"
     printf "Contact Jackson M. Tsuji (jackson.tsuji@uwaterloo.ca) for bug reports or feature requests.\n\n"
-    printf "Usage: $(basename $0) atlas_dir coassembly_sample_ID output_dir threads 2>&1 | tee $(basename $0 .sh).log\n\n"
+    printf "Usage: $(basename $0) run_mode atlas_dir coassembly_sample_ID output_dir threads mapping_guide_file.tsv 2>&1 | tee $(basename $0 .sh).log\n\n"
     printf "Usage details:\n"
-    printf "1. atlas_dir: Path to the base directory where ATLAS files were output.\n"
-    printf "2. coassembly_sample_ID: Exact name of the coassembly that you desire to visualize bins from. MUST be a sample within the 'coassembly' directory in the 'atlas_dir' folder.\n"
-    printf "3. output_dir: Path to save the anvio database and associated files to.\n"
-    printf "4. threads: number of threads to run.\n\n"
+    printf "1. run_mode: Either 'normal' for a single ATLAS assembly or 'coassembly' if the coassembly ATLAS extension was used (you'll know if you did this earlier; otherwise just use 'normal').\n"
+    printf "2. atlas_dir: Path to the base directory where ATLAS files were output.\n"
+    printf "3. coassembly_sample_ID: Exact name of the coassembly that you desire to visualize bins from. MUST be a sample within the 'coassembly' directory in the 'atlas_dir' folder.\n"
+    printf "4. output_dir: Path to save the anvio database and associated files to.\n"
+    printf "5. threads: number of threads to run.\n\n"
+    printf "6. mapping_guide_file: MUST be specified if you run in 'normal' mode but is not needed for 'coassembly' mode. A tab-separated file (with headers). Column 1 (sample_name) should be the ID of the metagenome you want to map onto the ATLAS assembly. Column 2 (raw_read_filepath) should be a comma-separated list of complete filepaths to the raw read files (e.g., R1, R2, se) for that metagenome - no spaces. You must supply either R1,R2 or R1,R2,se for the script to work.\n\n"
     printf "Additional usage notes:\n"
-    printf "* REQUIREMENTS: supports coassembly output from atlas-extensions version '1.0.22-coassembly-r3', although you do not need to have the requirements for the ATLAS coassembly extension to run this script. Must have anvio4 installed (ideally via conda). Must have the Anvi'o COG database set up via 'anvi-setup-ncbi-cogs'. Also, need R and an internet connection.\n"
+    printf "* REQUIREMENTS: Must have anvio4 installed (ideally via conda). Must have the Anvi'o COG database set up via 'anvi-setup-ncbi-cogs'. Also, need R and an internet connection.\n"
+    printf "* If you use the 'coassembly' run_mode, this script is compataible with atlas-extensions version '1.0.22-coassembly-r3' output.\n"
+    printf "\n* Example mapping_guide_file.tsv:\n"
+    printf "sample_name\traw_read_filepaths\n"
+    printf "NEIF_Jul17\t/home/data/metagenomes/NEIF/QC/NEIF_Jul17_QC_R1.fastq.gz,/home/data/metagenomes/NEIF/QC/NEIF_Jul17_QC_R2.fastq.gz,/home/data/metagenomes/NEIF/QC/NEIF_Jul17_QC_se.fastq.gz\n"
+    printf "NEIF_Sep17\t/home/data/metagenomes/NEIF2/QC/NEIF_Sep17_QC_R1.fastq.gz,/home/data/metagenomes/NEIF2/QC/NEIF_Sep17_QC_R2.fastq.gz,/home/data/metagenomes/NEIF2/QC/NEIF_Sep17_QC_se.fastq.gz\n"
+    printf "NW1_Jul17\t/home/data/metagenomes/NW1/QC/NW1_QC_R1.fastq.gz,/home/data/metagenomes/NW1/QC/NW1_QC_R2.fastq.gz,/home/data/metagenomes/NW1/QC/NW1_QC_se.fastq.gz\n\n"
     exit 1
 fi
 
@@ -36,10 +44,16 @@ fi
 # atlas-to-anvi.sh "/Hippodrome/jmtsuji/180123_ELA111314_atlas_r1.0.22_plus_full" "CA-L227-2013" "/Hippodrome/jmtsuji/180123_ELA111314_atlas_r1.0.22_plus_full/post-analysis/04_anvio/CA-L227-2013" 6 2>&1 | tee atlas-to-anvi.log
 
 # Set variables from user input:
-atlas_dir=$1
-coassembly_sample_ID=$2
-output_dir=$3
-threads=$4
+run_mode=$1
+atlas_dir=$2
+coassembly_sample_ID=$3
+output_dir=$4
+threads=$5
+if [ $# == 6 ]; then
+	read_mapping_samples_table=$6
+fi
+
+# TODO - need major revisions to get rid of 'coassembly' directory if run_mode is set as 'normal'
 
 function test_inputs {
 
@@ -73,6 +87,8 @@ function test_inputs {
 		exit 1
 	
 	fi
+
+	# TODO - add tests for run_mode and for mapping samples table
 
 }
 
@@ -263,7 +279,7 @@ function import_atlas_annotations {
 
 }
 
-function make_read_mapping_profiles {
+function make_read_mapping_profiles_coassembly {
 
 	# Get samples
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Mapping relative abundance profiles"
@@ -292,6 +308,95 @@ function make_read_mapping_profiles {
 		
 		# Remove indexed bam
 		rm ${sample_name_simple}.bam ${sample_name_simple}.bam.bai
+		
+	done
+
+}
+
+function make_read_mapping_profiles_regular_assembly {
+
+	# Get samples
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Mapping relative abundance profiles for samples provided by user"
+	cd ${output_dir}/02_multi_mapping
+
+	# Load names of samples to map
+	sample_names=($(cut -d $'\t' -f 1 ${read_mapping_samples_table} | tail -n +2))
+	# Load a comma-separated list of the raw read inputs
+	sample_filepaths=($(cut -d $'\t' -f 2 ${read_mapping_samples_table} | tail -n +2))
+
+
+	for i in ${#sample_names[@]}; do
+		j=$((${i}-1))
+		sample_name=${sample_names[${i}]}
+		sample_name_simple=$(sed s/'-'/'_'/g <<<${sample_name}) # Get rid of dashes
+		sample_filepath=${sample_filepaths[${i}]}
+
+		# Get the individual filepaths that are currently comma-separated. To do so, temporarily change the internal fields separator (IFS) to separate based on commas
+		OFS=${IFS} # backup the standard internal fields separator
+		IFS=","
+		sample_filepaths_individual=($(echo ${sample_filepath}))
+		IFS=${OFS} # restore the old internal fields separator
+
+		# Check files exist
+		for path in ${sample_filepaths_individual[@]}; do
+			if [ -f ${path} ]; then
+				echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: found file '${path}'"
+			else
+				echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: ${sample_name}: file '${path}' not found. Exiting..."
+				exit 1
+			fi
+		done
+
+		# Do different read mapping based on whether two (R1, R2) or three file (R1, R2, se) paths were parsed out
+		if [ ${#sample_filepaths_individual[@]} == 3 ]; then
+
+			R1=${sample_filepaths_individual[0]}
+			R2=${sample_filepaths_individual[1]}
+			se=${sample_filepaths_individual[2]}
+			# TODO - fix
+			contigs="${atlas_dir}/${coassembly_sample_ID}/${coassembly_sample_ID}_contigs.fasta"
+			# TODO - fix
+			outfile="03_mapping/${genome_base}_to_${metagenome_base}.sam"
+			# TODO - fix
+			logfile="03_mapping/logs/${genome}_to_${metagenome_base}_contig_coverage_stats.log"
+
+			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: read mapping using ${#sample_filepaths_individual[@]} identified raw read files."
+			bbwrap.sh nodisk=t ref=${contigs} in1=${R1},${se} in2=${R2},null trimreaddescriptions=t outm=${outfile} threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
+
+		elif [ ${#sample_filepaths_individual[@]} == 2 ]; then
+
+			R1=${sample_filepaths_individual[0]}
+			R2=${sample_filepaths_individual[1]}
+			# TODO - fix
+			contigs="${atlas_dir}/${coassembly_sample_ID}/${coassembly_sample_ID}_contigs.fasta"
+			# TODO - fix
+			outfile="03_mapping/${genome_base}_to_${metagenome_base}.sam"
+			# TODO - fix
+			logfile="03_mapping/logs/${genome}_to_${metagenome_base}_contig_coverage_stats.log"
+
+			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: read mapping using ${#sample_filepaths_individual[@]} identified raw read files."
+			bbwrap.sh nodisk=t ref=${contigs} in1=${R1} in2=${R2},null trimreaddescriptions=t outm=${outfile} threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
+
+		else
+
+			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: ${sample_name}: user provided ${#sample_filepaths_individual[@]} raw read files for read mapping, but either 2 or 3 are needed. Exiting..."
+			exit 1	
+	
+		fi
+
+		# Convert SAM to BAM and index
+		samtools view -b ${outfile} | samtools sort -@ ${threads} -m 4G > ${outfile%.sam}.bam
+		samtools index -b -@ ${threads} ${outfile%.sam}.bam
+		rm ${outfile}
+		
+		# Generate profile
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile"
+		anvi-profile -i ${outfile%.sam}.bam -c ${output_dir}/${coassembly_sample_ID}_contigs.db \
+						--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} -T ${threads} \
+						--min-contig-length 1000 2>&1 | tee logs/anvi-profile_${sample_name_simple}.log
+		
+		# Remove indexed bam to save space
+		rm ${outfile%.sam}.bam ${outfile%.sam}.bam.bai
 		
 	done
 
@@ -380,7 +485,12 @@ function main {
 	import_atlas_annotations
 
 	# Add read mapping information to the database
-	make_read_mapping_profiles
+	if [ ${run_mode} == "coassembly" ]; then
+		make_read_mapping_profiles_coassembly
+	elif [ ${run_mode} == "normal" ]; then
+		make_read_mapping_profiles_regular_assembly
+	fi
+
 	merge_read_mapping_profiles
 
 	# Import bins
