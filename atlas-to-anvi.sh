@@ -21,11 +21,11 @@ if [ $# == 0 ]
     printf "$(basename $0): Imports ATLAS-coassembly output into anvio for manual bin refinement. Early development version.\n"
     printf "Version: ${script_version}\n"
     printf "Contact Jackson M. Tsuji (jackson.tsuji@uwaterloo.ca) for bug reports or feature requests.\n\n"
-    printf "Usage: $(basename $0) run_mode atlas_dir coassembly_sample_ID output_dir threads mapping_guide_file.tsv 2>&1 | tee $(basename $0 .sh).log\n\n"
+    printf "Usage: $(basename $0) run_mode atlas_dir assembly_sample_ID output_dir threads mapping_guide_file.tsv 2>&1 | tee $(basename $0 .sh).log\n\n"
     printf "Usage details:\n"
     printf "1. run_mode: Either 'normal' for a single ATLAS assembly or 'coassembly' if the coassembly ATLAS extension was used (you'll know if you did this earlier; otherwise just use 'normal').\n"
     printf "2. atlas_dir: Path to the base directory where ATLAS files were output.\n"
-    printf "3. coassembly_sample_ID: Exact name of the coassembly that you desire to visualize bins from. MUST be a sample within the 'coassembly' directory in the 'atlas_dir' folder.\n"
+    printf "3. assembly_sample_ID: Exact name of the assembly/coassembly that you desire to visualize bins from. If in coassembly mode, MUST be a sample within the 'coassembly' directory in the 'atlas_dir' folder.\n"
     printf "4. output_dir: Path to save the anvio database and associated files to.\n"
     printf "5. threads: number of threads to run.\n\n"
     printf "6. mapping_guide_file: MUST be specified if you run in 'normal' mode but is not needed for 'coassembly' mode. A tab-separated file (with headers). Column 1 (sample_name) should be the ID of the metagenome you want to map onto the ATLAS assembly. Column 2 (raw_read_filepath) should be a comma-separated list of complete filepaths to the raw read files (e.g., R1, R2, se) for that metagenome - no spaces. You must supply either R1,R2 or R1,R2,se for the script to work.\n\n"
@@ -46,14 +46,12 @@ fi
 # Set variables from user input:
 run_mode=$1
 atlas_dir=$2
-coassembly_sample_ID=$3
+assembly_sample_ID=$3
 output_dir=$4
 threads=$5
 if [ $# == 6 ]; then
 	read_mapping_samples_table=$6
 fi
-
-# TODO - need major revisions to get rid of 'coassembly' directory if run_mode is set as 'normal'
 
 function test_inputs {
 
@@ -64,20 +62,63 @@ function test_inputs {
 	
 	fi
 	
-	
-	if [ ! -d ${atlas_dir}/coassembly ]; then
-	
-		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: directory '${atlas_dir}/coassembly' does not exist. Have you run atlas-coassembly? Exiting..."
-		exit 1
-	
-	fi
+	# Now check the run mode and then do sub-checks based on the run mode.
+	if [ ${run_mode} = "coassembly" ]; then
+
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Running in coassembly mode."
+
+		if [ ! -d ${atlas_dir}/coassembly ]; then
+		
+			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: directory '${atlas_dir}/coassembly' does not exist. Have you run atlas-coassembly? Exiting..."
+			exit 1
+		
+		fi
 
 
-	if [ ! -d ${atlas_dir}/coassembly/${coassembly_sample_ID} ]; then
-	
-		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: directory '${atlas_dir}/coassembly/${coassembly_sample_ID}' does not exist. Is your coassembly_sample_ID '${coassembly_sample_ID}' correct? Exiting..."
+		if [ ! -d ${atlas_dir}/coassembly/${assembly_sample_ID} ]; then
+		
+			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: directory '${atlas_dir}/coassembly/${assembly_sample_ID}' does not exist. Is your assembly_sample_ID '${assembly_sample_ID}' correct? Exiting..."
+			exit 1
+		
+		fi
+
+	elif [ ${run_mode} = "normal" ]; then
+
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Running in normal mode."
+
+		if [ ! -d ${atlas_dir}/${assembly_sample_ID} ]; then
+		
+			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: directory '${atlas_dir}/${assembly_sample_ID}' does not exist. Is your assembly_sample_ID '${assembly_sample_ID}' correct? Exiting..."
+			exit 1
+		
+		fi
+
+
+		if [ ! -f ${read_mapping_samples_table} ]; then
+
+			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: mapping_guide_file not found at '${read_mapping_samples_table}'. The guide file is required for normal mode. See help message (by running this script with no arguments) for the format of the guide file. Exiting..."
+			exit 1
+
+		fi
+
+		# Roughly check the format of the guide file
+		OFS=${IFS}
+		IFS=" "
+		expected_first_line="sample_name\traw_read_filepaths"
+		actual_first_line=$(head -n 1 ${read_mapping_samples_table})
+		if [ $(printf ${expected_first_line}) != ${actual_first_line} ]; then
+
+			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: mapping_guide_file does not appear to be the correct format. The first line reads as '${actual_first_line}' instead of the expected '$(printf ${expected_first_line})'. The guide file is required for normal mode. See help message (by running this script with no arguments) for the format of the guide file. Exiting..."
+			exit 1
+
+		fi
+		IFS=${OFS}
+
+	else
+
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: run_mode must be either 'normal' or 'coassembly', but you entered '${run_mode}'. Exiting..."
 		exit 1
-	
+
 	fi
 	
 	
@@ -88,7 +129,23 @@ function test_inputs {
 	
 	fi
 
-	# TODO - add tests for run_mode and for mapping samples table
+}
+
+function assign_working_directory {
+	# Determines the base directory where ATLAS files are stored based on whether the run mode is normal or coassembly
+
+	if [ ${run_mode} = "normal" ]; then
+		work_dir=${atlas_dir}/${assembly_sample_ID}
+
+	elif [ ${run_mode} = "coassembly" ]; then
+		work_dir=${atlas_dir}/coassembly/${assembly_sample_ID}
+
+	else
+		echo "Something's wrong. Sorry. Please contact code developers. Exiting..." # Really should never get to this point, because the run_mode was already checked in test_inputs above.
+		exit 1
+	fi
+
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Assigned working directory to '${work_dir}'."
 
 }
 
@@ -116,8 +173,8 @@ function export_prokka_info {
 	fi
 		
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting prokka gene annotations"
-	python gff_parser.py ${atlas_dir}/coassembly/${coassembly_sample_ID}/annotation/prokka/${coassembly_sample_ID}.gff \
-					--gene-calls ${coassembly_sample_ID}_gene_calls.txt --annotation ${coassembly_sample_ID}_gene_annot.txt
+	python gff_parser.py ${work_dir}/annotation/prokka/${assembly_sample_ID}.gff \
+					--gene-calls ${assembly_sample_ID}_gene_calls.txt --annotation ${assembly_sample_ID}_gene_annot.txt
 	# Script gives no log info.
 
 }
@@ -129,10 +186,10 @@ function match_atlas_table_to_prokka_info {
 	cd ${output_dir}/01b_import_atlas_table
 	
 	# Get the final gene entry number in the prokka file
-	last_prokka_gene_ID=$(tail -n 1 ${output_dir}/01a_import_prokka/${coassembly_sample_ID}_gene_calls.txt | cut -d $'\t' -f 1)
+	last_prokka_gene_ID=$(tail -n 1 ${output_dir}/01a_import_prokka/${assembly_sample_ID}_gene_calls.txt | cut -d $'\t' -f 1)
 	
 	# Get the final gene entry number of the altas taxonomy file
-	last_atlas_gene_ID=$(tail -n 1 ${output_dir}/01b_import_atlas_table/${coassembly_sample_ID}_gene_taxonomy.tsv | cut -d $'\t' -f 1)
+	last_atlas_gene_ID=$(tail -n 1 ${output_dir}/01b_import_atlas_table/${assembly_sample_ID}_gene_taxonomy.tsv | cut -d $'\t' -f 1)
 
 	if [ ${last_prokka_gene_ID} -eq ${last_atlas_gene_ID} ]; then
 		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Prokka gene calls and ATLAS gene taxonomy annotations match in total numbers - good."
@@ -141,10 +198,10 @@ function match_atlas_table_to_prokka_info {
 		
 		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: WARNING: prokka gene calls and ATLAS gene taxonomy annotations do NOT match in total numbers. Final prokka gene call ID is '${last_prokka_gene_ID}', but final ATLAS taxonomy gene annotation ID is '${last_atlas_gene_ID}'. This has been observed before possibly as an error in prokka while generating the GFF file (final entries are cut out?)."
 
-		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: To correct error, deleting gene IDs in ATLAS gene taxonomy file from after ${last_prokka_gene_ID} until ${last_atlas_gene_ID}. Keeping old (complete) gene taxonomy file as '${coassembly_sample_ID}_gene_taxonomy_ORIGINAL.tsv' but saving the new (truncated) gene taxonomy file over the original at '${coassembly_sample_ID}_gene_taxonomy.tsv'."
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: To correct error, deleting gene IDs in ATLAS gene taxonomy file from after ${last_prokka_gene_ID} until ${last_atlas_gene_ID}. Keeping old (complete) gene taxonomy file as '${assembly_sample_ID}_gene_taxonomy_ORIGINAL.tsv' but saving the new (truncated) gene taxonomy file over the original at '${assembly_sample_ID}_gene_taxonomy.tsv'."
 		
 		# Find the line number in the altas gene taxonomy file where the 'last_prokka_gene_ID' is
-		atlas_tax_file="${output_dir}/01b_import_atlas_table/${coassembly_sample_ID}_gene_taxonomy.tsv"
+		atlas_tax_file="${output_dir}/01b_import_atlas_table/${assembly_sample_ID}_gene_taxonomy.tsv"
 		
 		# First, do a sanity check that there is only one match to the prokka gene caller ID
 		num_hits=$(grep -c ^${last_prokka_gene_ID} ${atlas_tax_file})
@@ -157,8 +214,8 @@ function match_atlas_table_to_prokka_info {
 		fi
 		
 		# Keep backup of original taxonomy file but make a new truncated one for the remainder of the pipeline.
-		mv ${coassembly_sample_ID}_gene_taxonomy.tsv ${coassembly_sample_ID}_gene_taxonomy_ORIGINAL.tsv
-		head -n ${matching_atlas_tax_line} ${coassembly_sample_ID}_gene_taxonomy_ORIGINAL.tsv > ${coassembly_sample_ID}_gene_taxonomy.tsv
+		mv ${assembly_sample_ID}_gene_taxonomy.tsv ${assembly_sample_ID}_gene_taxonomy_ORIGINAL.tsv
+		head -n ${matching_atlas_tax_line} ${assembly_sample_ID}_gene_taxonomy_ORIGINAL.tsv > ${assembly_sample_ID}_gene_taxonomy.tsv
 		
 	elif [ ${last_prokka_gene_ID} -gt ${last_atlas_gene_ID} ]; then
 	
@@ -188,10 +245,26 @@ function export_atlas_info {
 		
 	fi
 
+	# The annotations table has a different name after coassembly versus standard assembly
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting information from the ATLAS annotations table"
-	./parse_atlas_table_for_anvio.R -a ${atlas_dir}/coassembly/${coassembly_sample_ID}/${coassembly_sample_ID}_annotations_multi_mapping.txt \
-					-t ${coassembly_sample_ID}_gene_taxonomy.tsv -c ${coassembly_sample_ID}_binning_results.tsv \
-					-b ${coassembly_sample_ID}_bins_info.tsv 2>&1 -@ ${threads} | tee parse_atlas_table_for_anvio.log
+	
+	if [ ${run_mode} = "normal" ]; then
+		annotations_filepath=${work_dir}/${assembly_sample_ID}_annotations.txt
+	else
+		annotations_filepath=${work_dir}/${assembly_sample_ID}_annotations_multi_mapping.txt
+	fi
+
+	if [ -f ${annotations_filepath} ]; then
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Found ATLAS annotations table at '${annotations_filepath}'."
+	else
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Could not find ATLAS annotations table at '${annotations_filepath}'. Exiting..."
+		exit 1
+	fi
+
+	# TODO -- Will replacing with the non multi-mapping version break anything? CHECK.
+	./parse_atlas_table_for_anvio.R -a ${annotations_filepath} \
+					-t ${assembly_sample_ID}_gene_taxonomy.tsv -c ${assembly_sample_ID}_binning_results.tsv \
+					-b ${assembly_sample_ID}_bins_info.tsv 2>&1 -@ ${threads} | tee parse_atlas_table_for_anvio.log
 
 	# TODO - add a different sanity check. Function in its current form does not work if genes without taxonomic assignment are at the end of the file...
 	## Deal with the differing length of the gene calls from the gff file versus the gene taxonomy
@@ -204,9 +277,9 @@ function generate_contig_database {
 	#### 2. Generate contigs database
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Generating the contigs database"
 	cd ${output_dir}
-	anvi-gen-contigs-database -f ${atlas_dir}/coassembly/${coassembly_sample_ID}/${coassembly_sample_ID}_contigs.fasta \
-					-o ${coassembly_sample_ID}_contigs.db -n ${coassembly_sample_ID}_contigs_db \
-					--external-gene-calls ${output_dir}/01a_import_prokka/${coassembly_sample_ID}_gene_calls.txt \
+	anvi-gen-contigs-database -f ${work_dir}/${assembly_sample_ID}_contigs.fasta \
+					-o ${assembly_sample_ID}_contigs.db -n ${assembly_sample_ID}_contigs_db \
+					--external-gene-calls ${output_dir}/01a_import_prokka/${assembly_sample_ID}_gene_calls.txt \
 					--ignore-internal-stop-codons --split-length -1 2>&1 | tee misc_logs/anvi-gen-contigs-database.log
 
 	## Example table
@@ -221,10 +294,10 @@ function add_hmm_annotations {
 	#### Annotate with single-copy marker genes
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with single-copy marker genes"
 	cd ${output_dir}
-	anvi-run-hmms -c ${coassembly_sample_ID}_contigs.db --num-threads ${threads} \
+	anvi-run-hmms -c ${assembly_sample_ID}_contigs.db --num-threads ${threads} \
 					2>&1 | tee misc_logs/anvi-run-hmms.log
-	# anvi-run-hmms -c ${coassembly_sample_ID}_contigs.db --num-threads ${threads} --hmm-profile-dir [your_dir_for_custom_hmms]
-	# anvi-display-contigs-stats ${coassembly_sample_ID}_contigs.db # Will this work?
+	# anvi-run-hmms -c ${assembly_sample_ID}_contigs.db --num-threads ${threads} --hmm-profile-dir [your_dir_for_custom_hmms]
+	# anvi-display-contigs-stats ${assembly_sample_ID}_contigs.db # Will this work?
 
 }
 
@@ -245,7 +318,7 @@ function add_cog_annotations {
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with COGs"
 	cd ${output_dir}
 	mkdir tmp
-	anvi-run-ncbi-cogs --num-threads ${threads} -c ${coassembly_sample_ID}_contigs.db \
+	anvi-run-ncbi-cogs --num-threads ${threads} -c ${assembly_sample_ID}_contigs.db \
 					--temporary-dir-path tmp 2>&1 | tee misc_logs/anvi-run-ncbi-cogs.log # --cog-data-dir ${cogs_data_dir}
 	rm -rf tmp
 
@@ -257,8 +330,8 @@ function import_atlas_annotations {
 	# TODO - get past the error within anvi'o where this seems incompatible with COG annotations. Skipping for now.
 	#### Import functional info
 	#echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing functional annotations from prokka"
-	#anvi-import-functions -c ${coassembly_sample_ID}_contigs.db \
-	#				-i ${output_dir}/01a_import_prokka/${coassembly_sample_ID}_gene_annot.txt \
+	#anvi-import-functions -c ${assembly_sample_ID}_contigs.db \
+	#				-i ${output_dir}/01a_import_prokka/${assembly_sample_ID}_gene_annot.txt \
 	#				2>&1 | tee misc_logs/anvi-import-functions.log
 
 	## Example table
@@ -268,8 +341,8 @@ function import_atlas_annotations {
 	
 	#### Import taxonomy info
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing taxonomic gene classifications from ATLAS"
-	anvi-import-taxonomy -c ${coassembly_sample_ID}_contigs.db \
-					-i 01b_import_atlas_table/${coassembly_sample_ID}_gene_taxonomy.tsv \
+	anvi-import-taxonomy -c ${assembly_sample_ID}_contigs.db \
+					-i 01b_import_atlas_table/${assembly_sample_ID}_gene_taxonomy.tsv \
 					-p default_matrix 2>&1 | tee misc_logs/anvi-import-taxonomy.log
 
 	## Example table
@@ -284,7 +357,7 @@ function make_read_mapping_profiles_coassembly {
 	# Get samples
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Mapping relative abundance profiles"
 	cd ${output_dir}/02_multi_mapping
-	sample_names=($(find ${atlas_dir}/coassembly/${coassembly_sample_ID}/multi_mapping -name "*.bam" -type f))
+	sample_names=($(find ${work_dir}/multi_mapping -name "*.bam" -type f))
 
 	for sample in ${sample_names[@]}; do
 		sample_name=${sample##*/}
@@ -302,7 +375,7 @@ function make_read_mapping_profiles_coassembly {
 		
 		# Generate profile
 		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile"
-		anvi-profile -i ${sample_name_simple}.bam -c ${output_dir}/${coassembly_sample_ID}_contigs.db \
+		anvi-profile -i ${sample_name_simple}.bam -c ${output_dir}/${assembly_sample_ID}_contigs.db \
 						--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} -T ${threads} \
 						--min-contig-length 1000 2>&1 | tee logs/anvi-profile_${sample_name_simple}.log
 		
@@ -318,6 +391,7 @@ function make_read_mapping_profiles_regular_assembly {
 	# Get samples
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Mapping relative abundance profiles for samples provided by user"
 	cd ${output_dir}/02_multi_mapping
+	mkdir -p alignment_files
 
 	# Load names of samples to map
 	sample_names=($(cut -d $'\t' -f 1 ${read_mapping_samples_table} | tail -n +2))
@@ -347,38 +421,30 @@ function make_read_mapping_profiles_regular_assembly {
 			fi
 		done
 
+		# Assign generic variables for read mapping
+		R1=${sample_filepaths_individual[0]}
+		R2=${sample_filepaths_individual[1]}
+		contigs="${work_dir}/${assembly_sample_ID}_contigs.fasta"
+		outfile="alignment_files/${sample_name}_to_${assembly_sample_ID}.sam"
+		logfile="alignment_files/${sample_name}_to_${assembly_sample_ID}_contig_coverage_stats.log"
+
 		# Do different read mapping based on whether two (R1, R2) or three file (R1, R2, se) paths were parsed out
 		if [ ${#sample_filepaths_individual[@]} == 3 ]; then
 
-			R1=${sample_filepaths_individual[0]}
-			R2=${sample_filepaths_individual[1]}
+			# Add single-ended reads
 			se=${sample_filepaths_individual[2]}
-			# TODO - fix
-			contigs="${atlas_dir}/${coassembly_sample_ID}/${coassembly_sample_ID}_contigs.fasta"
-			# TODO - fix
-			outfile="03_mapping/${genome_base}_to_${metagenome_base}.sam"
-			# TODO - fix
-			logfile="03_mapping/logs/${genome}_to_${metagenome_base}_contig_coverage_stats.log"
 
 			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: read mapping using ${#sample_filepaths_individual[@]} identified raw read files."
 			bbwrap.sh nodisk=t ref=${contigs} in1=${R1},${se} in2=${R2},null trimreaddescriptions=t outm=${outfile} threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
 
 		elif [ ${#sample_filepaths_individual[@]} == 2 ]; then
 
-			R1=${sample_filepaths_individual[0]}
-			R2=${sample_filepaths_individual[1]}
-			# TODO - fix
-			contigs="${atlas_dir}/${coassembly_sample_ID}/${coassembly_sample_ID}_contigs.fasta"
-			# TODO - fix
-			outfile="03_mapping/${genome_base}_to_${metagenome_base}.sam"
-			# TODO - fix
-			logfile="03_mapping/logs/${genome}_to_${metagenome_base}_contig_coverage_stats.log"
-
 			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: read mapping using ${#sample_filepaths_individual[@]} identified raw read files."
 			bbwrap.sh nodisk=t ref=${contigs} in1=${R1} in2=${R2},null trimreaddescriptions=t outm=${outfile} threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
 
 		else
-
+			
+			# TODO - add this check to the start of the script so as to not disappoint the user.
 			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: ${sample_name}: user provided ${#sample_filepaths_individual[@]} raw read files for read mapping, but either 2 or 3 are needed. Exiting..."
 			exit 1	
 	
@@ -391,7 +457,7 @@ function make_read_mapping_profiles_regular_assembly {
 		
 		# Generate profile
 		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile"
-		anvi-profile -i ${outfile%.sam}.bam -c ${output_dir}/${coassembly_sample_ID}_contigs.db \
+		anvi-profile -i ${outfile%.sam}.bam -c ${output_dir}/${assembly_sample_ID}_contigs.db \
 						--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} -T ${threads} \
 						--min-contig-length 1000 2>&1 | tee logs/anvi-profile_${sample_name_simple}.log
 		
@@ -403,13 +469,33 @@ function make_read_mapping_profiles_regular_assembly {
 }
 
 function merge_read_mapping_profiles {
-
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Merging information from mapped samples into contig database"
 	cd ${output_dir}
-	anvi-merge ${output_dir}/02_multi_mapping/*/PROFILE.db -o ${coassembly_sample_ID}_samples_merged \
-					-c ${coassembly_sample_ID}_contigs.db --skip-concoct-binning -S metabat2 \
-					2>&1 | tee misc_logs/anvi-merge.log
-	# Consider '--enforce-hierarchical-clustering' to cluster even with > 25,000 contigs. But could take a long time...
+
+	# Check how many read mapping profiles are present
+	profiles=($(find . -name "PROFILE.db"))
+	num_profiles=${#profiles[@]}
+
+	if [ ${num_profiles} = 1 ]; then
+
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Only one mapped sample; no need to merge mapped samples. Moving sample to '${assembly_sample_ID}_samples_merged'."
+		profile=${profiles[0]}
+		profile_folder=${profile%/*}
+		mv ${profile_folder} ${assembly_sample_ID}_samples_merged
+
+	elif [ ${num_profiles} -gt 1 ]; then
+
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Merging information from ${num_profiles} mapped samples into contig database."
+		anvi-merge ${output_dir}/02_multi_mapping/*/PROFILE.db -o ${assembly_sample_ID}_samples_merged \
+						-c ${assembly_sample_ID}_contigs.db --skip-concoct-binning -S metabat2 \
+						2>&1 | tee misc_logs/anvi-merge.log
+		# Consider '--enforce-hierarchical-clustering' to cluster even with > 25,000 contigs. But could take a long time...
+
+	else
+
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: found ${num_profiles} read mapping profiles to merge; this can't work for some reason. Exiting..."
+		exit 1	
+
+	fi
 
 }
 
@@ -417,10 +503,10 @@ function import_custom_bins {
 
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing bin info from ATLAS"
 	cd ${output_dir}
-	anvi-import-collection 01b_import_atlas_table/${coassembly_sample_ID}_binning_results.tsv \
-					-p ${coassembly_sample_ID}_samples_merged/PROFILE.db \
-					-c ${coassembly_sample_ID}_contigs.db -C "metabat2" --contigs-mode \
-					--bins-info 01b_import_atlas_table/${coassembly_sample_ID}_bins_info.tsv \
+	anvi-import-collection 01b_import_atlas_table/${assembly_sample_ID}_binning_results.tsv \
+					-p ${assembly_sample_ID}_samples_merged/PROFILE.db \
+					-c ${assembly_sample_ID}_contigs.db -C "metabat2" --contigs-mode \
+					--bins-info 01b_import_atlas_table/${assembly_sample_ID}_bins_info.tsv \
 					2>&1 | tee misc_logs/anvi-import-collection.log
 
 	## Example table: external_binning_of_contigs.txt
@@ -442,9 +528,9 @@ function summarize {
 
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Summarizing anvio binning statistics"
 	cd ${output_dir}
-	anvi-summarize -p ${coassembly_sample_ID}_samples_merged/PROFILE.db \
-					-c ${coassembly_sample_ID}_contigs.db -C metabat2 \
-					-o ${coassembly_sample_ID}_summary --taxonomic-level t_genus \
+	anvi-summarize -p ${assembly_sample_ID}_samples_merged/PROFILE.db \
+					-c ${assembly_sample_ID}_contigs.db -C metabat2 \
+					-o ${assembly_sample_ID}_summary --taxonomic-level t_genus \
 					--init-gene-coverages 2>&1 | tee misc_logs/anvi-summarize.log
 	# Note: '--init-gene-coverages' takes a long time to run.
 	# Note: consider '--quick-summary' for faster run with with more minimal output.
@@ -462,12 +548,13 @@ function main {
 	# Report settings
 	echo "Run settings:"
 	echo "atlas_dir: ${atlas_dir}"
-	echo "coassembly_sample_ID: ${coassembly_sample_ID}"
+	echo "assembly_sample_ID: ${assembly_sample_ID}"
 	echo "output_dir: ${output_dir}"
 	echo "threads: ${threads}"
 	echo ""
 
 	test_inputs
+	assign_working_directory
 	
 	# Make needed output directories
 	mkdir -p ${output_dir}/01a_import_prokka ${output_dir}/01b_import_atlas_table ${output_dir}/02_multi_mapping/logs ${output_dir}/misc_logs
@@ -505,9 +592,9 @@ function main {
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: $(basename $0): complete. Started at ${start_time} and finished at ${end_time}."
 	printf "\nTo visualize, please run:\n"
 	printf "cd ${output_dir}\n"
-	printf "anvi-interactive -p ${coassembly_sample_ID}_samples_merged/PROFILE.db -c ${coassembly_sample_ID}_contigs.db -C metabat2 --server-only -P 8080\n"
+	printf "anvi-interactive -p ${assembly_sample_ID}_samples_merged/PROFILE.db -c ${assembly_sample_ID}_contigs.db -C metabat2 --server-only -P 8080\n"
 	printf "bin_name=[name_of_interest]\n"
-	printf "anvi-refine -p ${coassembly_sample_ID}_samples_merged/PROFILE.db -c ${coassembly_sample_ID}_contigs.db -C metabat2 -b \${bin_name} --taxonomic-level t_genus --title \${bin_name} -P 8080 --server-only\n\n"
+	printf "anvi-refine -p ${assembly_sample_ID}_samples_merged/PROFILE.db -c ${assembly_sample_ID}_contigs.db -C metabat2 -b \${bin_name} --taxonomic-level t_genus --title \${bin_name} -P 8080 --server-only\n\n"
 
 }
 
