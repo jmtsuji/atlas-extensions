@@ -22,7 +22,7 @@ if [ $# == 0 ]
     printf "Version: ${script_version}\n"
     printf "Contact Jackson M. Tsuji (jackson.tsuji@uwaterloo.ca) for bug reports or feature requests.\n\n"
     printf "Installation: you can install all dependencies via conda with:\n"
-    printf "              conda create -y -n atlas_to_anvi -c bioconda -c conda-forge -c r anvio diamond bwa bbmap gffutils r r-dplyr r-getopt\n"
+    printf "              conda create -y -n atlas_to_anvi -c bioconda -c conda-forge -c r anvio diamond bwa bbmap gffutils r r-plyr r-dplyr r-getopt\n"
     printf "              Then clone the Github repo, add the scripts to your PATH, enter the conda environment using 'source activate atlas_to_anvi', and run.\n\n"
     printf "Usage: $(basename $0) run_mode atlas_dir assembly_sample_ID output_dir threads mapping_guide_file.tsv 2>&1 | tee $(basename $0 .sh).log\n\n"
     printf "Usage details:\n"
