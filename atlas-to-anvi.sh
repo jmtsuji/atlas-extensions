@@ -21,9 +21,14 @@ if [ $# == 0 ]
     printf "$(basename $0): Imports ATLAS-coassembly output into anvio for manual bin refinement. Early development version.\n"
     printf "Version: ${script_version}\n"
     printf "Contact Jackson M. Tsuji (jackson.tsuji@uwaterloo.ca) for bug reports or feature requests.\n\n"
-    printf "Installation: you can install all dependencies via conda with:\n"
+    printf "Installation: you can install all dependencies via conda and then add the scripts from the Github repo with:\n"
     printf "              conda create -y -n atlas_to_anvi -c bioconda -c conda-forge -c r anvio diamond bwa bbmap gffutils r r-plyr r-dplyr r-getopt\n"
-    printf "              Then clone the Github repo, add the scripts to your PATH, enter the conda environment using 'source activate atlas_to_anvi', and run.\n\n"
+    printf "              git clone https://github.com/jmtsuji/atlas-extensions.git\n"
+    printf "              cp atlas-extensions/parse*R atlas-extensions/atlas-to-anvi.sh \${HOME}/miniconda*/envs/atlas_to_anvi/bin\n"
+    printf "              rm -rf atlas-extensions\n"
+    printf "              source activate atlas_to_anvi\n"
+    printf "              anvi-setup-ncbi-cogs --just-do-it # run the first time you ever set up the environment"
+    printf "              # Then, you're ready to go!.\n\n"
     printf "Usage: $(basename $0) run_mode atlas_dir assembly_sample_ID output_dir threads mapping_guide_file.tsv 2>&1 | tee $(basename $0 .sh).log\n\n"
     printf "Usage details:\n"
     printf "1. run_mode: Either 'normal' for a single ATLAS assembly or 'coassembly' if the coassembly ATLAS extension was used (you'll know if you did this earlier; otherwise just use 'normal').\n"
@@ -309,7 +314,7 @@ function add_cog_annotations {
 	# TODO - find a way to test whether or not setup is needed. Assumes already set up for now.
 	
 	# To set up:
-	# anvi-setup-ncbi-cogs --num-threads ${threads} --just-do-it 2>&1 | tee misc_logs/anvi-setup-ncbi-cogs.log # --cog-data-dir ${cogs_data_dir}
+	#anvi-setup-ncbi-cogs --num-threads ${threads} --just-do-it 2>&1 | tee misc_logs/anvi-setup-ncbi-cogs.log # --cog-data-dir ${cogs_data_dir}
 	
 	## To test if custom COGs database exists:
 	# TODO - finish or delete
