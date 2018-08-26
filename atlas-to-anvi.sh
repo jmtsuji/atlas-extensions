@@ -405,18 +405,18 @@ function make_read_mapping_profiles_regular_assembly {
 	sample_names=($(cut -d $'\t' -f 1 ${read_mapping_samples_table} | tail -n +2))
 	# Load a comma-separated list of the raw read inputs
 	sample_filepaths=($(cut -d $'\t' -f 2 ${read_mapping_samples_table} | tail -n +2))
-
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${#sample_names[@]} samples provided."
 
 	for i in ${#sample_names[@]}; do
 		j=$((${i}-1))
-		sample_name=${sample_names[${i}]}
+		sample_name=${sample_names[${j}]}
 		sample_name_simple=$(sed s/'-'/'_'/g <<<${sample_name}) # Get rid of dashes
-		sample_filepath=${sample_filepaths[${i}]}
+		sample_filepath=${sample_filepaths[${j}]}
 
 		# Get the individual filepaths that are currently comma-separated. To do so, temporarily change the internal fields separator (IFS) to separate based on commas
 		OFS=${IFS} # backup the standard internal fields separator
 		IFS=","
-		sample_filepaths_individual=($(echo ${sample_filepath}))
+		sample_filepaths_individual=(${sample_filepath})
 		IFS=${OFS} # restore the old internal fields separator
 
 		# Check files exist
@@ -436,6 +436,9 @@ function make_read_mapping_profiles_regular_assembly {
 		outfile="alignment_files/${sample_name}_to_${assembly_sample_ID}.sam"
 		logfile="alignment_files/${sample_name}_to_${assembly_sample_ID}_contig_coverage_stats.log"
 
+		# Hard-code memory for now
+		MEMORY=50
+
 		# Do different read mapping based on whether two (R1, R2) or three file (R1, R2, se) paths were parsed out
 		if [ ${#sample_filepaths_individual[@]} == 3 ]; then
 
@@ -443,12 +446,12 @@ function make_read_mapping_profiles_regular_assembly {
 			se=${sample_filepaths_individual[2]}
 
 			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: read mapping using ${#sample_filepaths_individual[@]} identified raw read files."
-			bbwrap.sh nodisk=t ref=${contigs} in1=${R1},${se} in2=${R2},null trimreaddescriptions=t outm=${outfile} threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
+			bbwrap.sh nodisk=t ref=${contigs} in1=${R1},${se} in2=${R2},null trimreaddescriptions=t outm=${outfile} threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
 
 		elif [ ${#sample_filepaths_individual[@]} == 2 ]; then
 
 			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: read mapping using ${#sample_filepaths_individual[@]} identified raw read files."
-			bbwrap.sh nodisk=t ref=${contigs} in1=${R1} in2=${R2},null trimreaddescriptions=t outm=${outfile} threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
+			bbwrap.sh nodisk=t ref=${contigs} in1=${R1} in2=${R2},null trimreaddescriptions=t outm=${outfile} threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
 
 		else
 			
@@ -459,7 +462,7 @@ function make_read_mapping_profiles_regular_assembly {
 		fi
 
 		# Convert SAM to BAM and index
-		samtools view -b ${outfile} | samtools sort -@ ${threads} -m 4G > ${outfile%.sam}.bam
+		samtools view -@ ${threads} -u ${outfile} | samtools sort -@ ${threads} > ${outfile%.sam}.bam
 		samtools index -b -@ ${threads} ${outfile%.sam}.bam
 		rm ${outfile}
 		
