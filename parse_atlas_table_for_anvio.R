@@ -38,6 +38,7 @@ parse_command_line_input <- function() {
                      'output_tax_file', 't', 1, "character",
                      'output_contig_bin_file', 'c', 1, "character",
                      'output_bin_info_file', 'b', 1, "character",
+                     'include_domain', 'd', 2, "logical",
                      'threads', '@', 2, "numeric",
                      'help', 'h', 2, "character"), byrow=TRUE, ncol=4)
   
@@ -59,6 +60,7 @@ parse_command_line_input <- function() {
         "--output_tax_file\t\tFilepath for output TSV-format gene-specific taxonomy file. [Required]\n",
         "--output_contig_bin_file\t\tFilepath for output TSV-format summary file of contig assignmen to bins. [Required]\n",
         "--output_bin_info_file\t\t\tFilepath for output TSV-format summary file of bin IDs with CheckM taxonomy - colours can be modified by user. [Required]\n",
+        "--include_domain\t\t\tInclude a column with the domain-level classification. Required for anvi'o version 5 and higher, but cannot be used for anvi'o version 4. [Optional]\n",
         "--threads\t\t\tNumber of threads to use when parsing taxonomy [Optional; default = 1]\n\n")
     
     quit(status = 1)
@@ -79,15 +81,24 @@ parse_command_line_input <- function() {
   }
   
   # Assign default for threads if nothing provided
+  if ( is.null(opt$include_domain) ) {
+    opt$include_domain <- FALSE
+  } else {
+    # Set include_domain to TRUE if anything was provided
+    opt$include_domain <- TRUE
+  }
+
   if ( is.null(opt$threads) ) {
     opt$threads <- 1
   }
+  
   
   # Make variables from provided input and save as global variables (<<-)
   atlas_table_filename <<- opt$atlas_table
   output_tax_filename <<- opt$output_tax_file
   output_contig_bin_filename <<- opt$output_contig_bin_file
   output_bin_info_filename <<- opt$output_bin_info_file
+  include_domain <<- opt$include_domain
   threads <<- opt$threads
   
 }
@@ -118,7 +129,7 @@ parse_greengenes_taxonomy <- function(greengenes_entry_vector, row_num, contig_i
     
     df <- matrix(refined, ncol = 7)
     df <- as.data.frame(df, stringsAsFactors = FALSE)
-    colnames(df) <- c("t_kingdom", "t_phylum", "t_class", "t_order", "t_family", "t_genus", "t_species")
+    colnames(df) <- c("t_domain", "t_phylum", "t_class", "t_order", "t_family", "t_genus", "t_species")
     
     # Add locus_tag and contig ID for santity checking (not yet added!)
     df$locus_tag <- locus_tag
@@ -144,9 +155,12 @@ parse_greengenes_taxonomy <- function(greengenes_entry_vector, row_num, contig_i
     
     # Bring column number down to Anvi'o requirements
     df_trunc <- df
-    df_trunc$t_kingdom <- NULL
     df_trunc$locus_tag <- NULL
     df_trunc$contig_id <- NULL
+
+    if (include_domain == FALSE) {
+      df_trunc$t_domain <- NULL
+    }
     
     # TODO - add support for this code
     # # Return the full table for testing and the truncated table for anvio
