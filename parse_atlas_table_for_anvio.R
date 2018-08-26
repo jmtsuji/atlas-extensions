@@ -221,7 +221,7 @@ main <- function() {
   
   # Read the table
   cat("Reading ATLAS table\n")
-  atlas_table <- read.table(atlas_table_filename, quote = "", sep = "\t", header = TRUE, stringsAsFactors = FALSE, comment.char = "")
+  atlas_table <- read.table(atlas_table_filename, sep = "\t", header = TRUE, stringsAsFactors = FALSE, comment.char = "", quote = "")
   
   # Make the taxonomy table
   cat("Parsing taxonomy\n")
