@@ -349,14 +349,14 @@ function import_atlas_annotations {
 	
 	#### Import taxonomy info
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing taxonomic gene classifications from ATLAS"
-	anvi-import-taxonomy -c ${assembly_sample_ID}_contigs.db \
-					-i 01b_import_atlas_table/${assembly_sample_ID}_gene_taxonomy.tsv \
-					-p default_matrix 2>&1 | tee misc_logs/anvi-import-taxonomy.log
+	anvi-import-taxonomy-for-genes -c ${assembly_sample_ID}_contigs.db \
+                                        -i 01b_import_atlas_table/${assembly_sample_ID}_gene_taxonomy.tsv \
+                                        -p default_matrix 2>&1 | tee misc_logs/anvi-import-taxonomy.log
 
 	## Example table
-	# gene_callers_id	t_phylum	t_class	t_order	t_family	t_genus	t_species
-	# 1	 	 	 	 	 	Bacteroides fragilis
-	# 2	 	 	 	 	 	Bacteroides fragilis
+	# gene_callers_id	t_kingdom	t_phylum	t_class	t_order	t_family	t_genus	t_species
+	# 1	 	 	 	 		 	Bacteroides fragilis
+	# 2	 	 	 	 		 	Bacteroides fragilis
 
 }
 
