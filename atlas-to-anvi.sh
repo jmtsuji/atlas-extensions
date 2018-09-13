@@ -446,12 +446,12 @@ function make_read_mapping_profiles_regular_assembly {
 			se=${sample_filepaths_individual[2]}
 
 			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: read mapping using ${#sample_filepaths_individual[@]} identified raw read files."
-			bbwrap.sh nodisk=t ref=${contigs} in1=${R1},${se} in2=${R2},null trimreaddescriptions=t outm=${outfile} threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
+			bbwrap.sh nodisk=t ref=${contigs} in1=${R1},${se} in2=${R2},null perfectmode=t trimreaddescriptions=t outm=${outfile} threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
 
 		elif [ ${#sample_filepaths_individual[@]} == 2 ]; then
 
 			echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: read mapping using ${#sample_filepaths_individual[@]} identified raw read files."
-			bbwrap.sh nodisk=t ref=${contigs} in1=${R1} in2=${R2},null trimreaddescriptions=t outm=${outfile} threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
+			bbwrap.sh nodisk=t ref=${contigs} in1=${R1} in2=${R2},null perfectmode=t trimreaddescriptions=t outm=${outfile} threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
 
 		else
 			
