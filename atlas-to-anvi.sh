@@ -385,7 +385,7 @@ function make_read_mapping_profiles_coassembly {
 		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile"
 		anvi-profile -i ${sample_name_simple}.bam -c ${output_dir}/${assembly_sample_ID}_contigs.db \
 						--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} -T ${threads} \
-						--min-contig-length 1000 2>&1 | tee logs/anvi-profile_${sample_name_simple}.log
+						--min-contig-length 1000 > logs/anvi-profile_${sample_name_simple}.log 2>&1
 		
 		# Remove indexed bam
 		rm ${sample_name_simple}.bam ${sample_name_simple}.bam.bai
@@ -462,15 +462,16 @@ function make_read_mapping_profiles_regular_assembly {
 		fi
 
 		# Convert SAM to BAM and index
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: Converting sam to bam"
 		samtools view -@ ${threads} -u ${outfile} | samtools sort -@ ${threads} > ${outfile%.sam}.bam
 		samtools index -b -@ ${threads} ${outfile%.sam}.bam
 		rm ${outfile}
 		
 		# Generate profile
-		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile"
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile (log: '${output_dir}/02_multi_mapping/logs/anvi-profile_${sample_name_simple}.log')"
 		anvi-profile -i ${outfile%.sam}.bam -c ${output_dir}/${assembly_sample_ID}_contigs.db \
 						--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} -T ${threads} \
-						--min-contig-length 1000 2>&1 | tee logs/anvi-profile_${sample_name_simple}.log
+						--min-contig-length 1000 > logs/anvi-profile_${sample_name_simple}.log 2>&1
 		
 		# Remove indexed bam to save space
 		rm ${outfile%.sam}.bam ${outfile%.sam}.bam.bai
