@@ -62,6 +62,7 @@ if [ $# == 6 ]; then
 fi
 
 function test_inputs {
+	# TODO - add tests to check dependencies exist
 
 	if [ ! -d ${atlas_dir} ]; then
 	
@@ -238,21 +239,6 @@ function export_atlas_info {
 
 	cd ${output_dir}/01b_import_atlas_table
 
-	if [ ! -f parse_atlas_table_for_anvio.R ]; then
-
-		# TODO - do this with proper version control
-		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Installing parse_atlas_table_for_anvio.R because it is not already present in the run folder"
-		git clone --quiet https://github.com/jmtsuji/atlas-extensions.git
-		mv atlas-extensions/parse_atlas_table_for_anvio.R .
-		rm -rf atlas-extensions
-		chmod 755 parse_atlas_table_for_anvio.R
-		
-	else
-
-		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: 'parse_atlas_table_for_anvio.R' is already present in the run folder; will not re-install."
-		
-	fi
-
 	# The annotations table has a different name after coassembly versus standard assembly
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting information from the ATLAS annotations table"
 	
@@ -270,7 +256,7 @@ function export_atlas_info {
 	fi
 
 	# TODO -- Will replacing with the non multi-mapping version break anything? CHECK.
-	./parse_atlas_table_for_anvio.R -a ${annotations_filepath} \
+	parse_atlas_table_for_anvio.R -a ${annotations_filepath} \
 					-t ${assembly_sample_ID}_gene_taxonomy.tsv -c ${assembly_sample_ID}_binning_results.tsv \
 					-b ${assembly_sample_ID}_bins_info.tsv 2>&1 -@ ${threads} | tee parse_atlas_table_for_anvio.log
 
