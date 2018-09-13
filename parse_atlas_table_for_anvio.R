@@ -202,6 +202,9 @@ summarize_bin_info <- function(atlas_table) {
   # Get required data
   bin_info <- unique(atlas_table$bin_id)
   
+  # Remove a blank if it was preserved by 'unique'
+  bin_info <- bin_info[!(bin_info %in% "")]
+  
   # Sort by name
   bin_info <- bin_info[order(bin_info)]
   
