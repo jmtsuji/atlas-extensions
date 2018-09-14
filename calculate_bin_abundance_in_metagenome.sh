@@ -82,8 +82,8 @@ for bin_path in ${bin_paths[@]}; do
 		bbwrap.sh nodisk=t ref=${contigs} in1=${R1},${se} in2=${R2},null perfectmode=t trimreaddescriptions=t \
 			out=stdout threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
 			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile} | \
-			samtools view -@ ${threads} -O bam | samtools sort -@ ${threads} -m 1G | \
-			tee >(samtools view -@ ${THREADS} -c -F 4 > ${output_dir}/mapping/mapped.tmp) |
+			samtools view -@ ${THREADS} -O bam | samtools sort -@ ${THREADS} -m 1G | \
+			tee >(samtools view -@ ${THREADS} -c -F 4 > ${output_dir}/mapping/mapped.tmp) | \
 			>(samtools view -@ ${THREADS} -c > ${output_dir}/mapping/all.tmp)
 
 		# (>&2 echo "[ $(date -u) ]: ${raw_read_name_base} to ${bin_name_base}: Calculating stats")
