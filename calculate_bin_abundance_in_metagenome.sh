@@ -48,11 +48,10 @@ iterations=$((${#bin_paths[@]}*${#raw_read_paths[@]}))
 
 # Initialize output read stats file
 (>&2 echo "[ $(date -u) ]: Initiatilizing '${bin_mapping_summary_filename##*/}'")
-printf "mapping_filename\tgenome\tmetagenome\tmapped_reads\ttotal_reads\tgenome_length_nt\t" > ${bin_mapping_summary_filename}
-printf "percent_recruited_reads\taverage_coverage\taverage_coverage_per_million_reads\n" >> ${bin_mapping_summary_filename}
+printf "mapping_filename\tgenome\tmetagenome\tmapped_reads\ttotal_reads\tgenome_length_nt\n" > ${bin_mapping_summary_filename}
 
 # Run all against all in a nested 'for' loop
-for bin_path in ${bin_paths}; do
+for bin_path in ${bin_paths[@]}; do
 
 	# Get total nucleotide length in bin for later
 	genome_char_count=$(grep -v "^>" ${bin_path} | wc)
@@ -62,44 +61,45 @@ for bin_path in ${bin_paths}; do
 
 	(>&2 echo "[ $(date -u) ]: Starting on bin '${bin_path##*/}' with length ${genome_length_nt} nt")
 
-	for raw_read_path in ${raw_read_paths}; do
+	for raw_read_path in ${raw_read_paths[@]}; do
 
 		# Get base names of bins and reads
 		bin_name_base=${bin_path%.*}
 		bin_name_base=${bin_name_base##*/}
-		raw_read_name_base=${raw_read_path%*R1.fastq.gz}
+		raw_read_name_base=${raw_read_path%*_QC_R1.fastq.gz}
 		raw_read_name_base=${raw_read_name_base##*/}
 
 		# Assign generic variables for read mapping
-		R1=${raw_read_dir}/${raw_read_name_base}R1.fastq.gz
-		R2=${raw_read_dir}/${raw_read_name_base}R2.fastq.gz
-		se=${raw_read_dir}/${raw_read_name_base}se.fastq.gz
+		R1=${raw_read_dir}/${raw_read_name_base}_QC_R1.fastq.gz
+		R2=${raw_read_dir}/${raw_read_name_base}_QC_R2.fastq.gz
+		se=${raw_read_dir}/${raw_read_name_base}_QC_se.fastq.gz
 		contigs=${bin_path}
 		read_mapping_file=${output_dir}/mapping/${bin_name_base}_to_${raw_read_name_base}.sam
 		logfile=${output_dir}/logs/${bin_name_base}_to_${raw_read_name_base}_contig_coverage_stats.log
 
-		# Read map
+		# Read map AND pipe directly to stats (to avoid excessive input/output, which is rough on hard drives)
 		(>&2 echo "[ $(date -u) ]: mapping '${raw_read_name_base}*.fastq.gz' to '${bin_name_base}'")
 		bbwrap.sh nodisk=t ref=${contigs} in1=${R1},${se} in2=${R2},null perfectmode=t trimreaddescriptions=t \
-			out=${read_mapping_file} threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
-			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
+			out=stdout threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
+			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile} | \
+			samtools view -@ ${threads} -O bam | samtools sort -@ ${threads} -m 1G | \
+			tee >(samtools view -@ ${THREADS} -c -F 4 > ${output_dir}/mapping/mapped.tmp) |
+			>(samtools view -@ ${THREADS} -c > ${output_dir}/mapping/all.tmp)
 
-		(>&2 echo "[ $(date -u) ]: ${raw_read_name_base} to ${bin_name_base}: Calculating stats")
+		# (>&2 echo "[ $(date -u) ]: ${raw_read_name_base} to ${bin_name_base}: Calculating stats")
 
 		# Extract mapping stats
-		mapped_reads=$(samtools view -@ ${THREADS} -c -F 4 ${read_mapping_file})
-		total_reads=$(samtools view -@ ${THREADS} -c ${read_mapping_file})
-		(>&2 echo "[ $(date -u) ]: ${raw_read_name_base} to ${bin_name_base}: ${mapped_reads} mapped; ${total_reads} total.")
+		mapped_reads=$(cat ${output_dir}/mapping/mapped.tmp)
+		total_reads=$(cat ${output_dir}/mapping/all.tmp)
+		(>&2 echo "[ $(date -u) ]: ${raw_read_name_base} to ${bin_name_base}: ${mapped_reads} mapped; ${total_reads} total. Adding to TSV.")
 
-		# Calculate additional stats
-		percent_recruited_reads=$((${mapped_reads}/${total_reads}*100))
-		average_coverage=$((${mapped_reads}/${genome_length_nt}))
-		average_coverage_per_million_reads=$((${average_coverage}/${total_reads}*1000000))
-
+		## Calculate additional stats
+		#percent_recruited_reads=$((${mapped_reads}/${total_reads}*100))
+		#average_coverage=$((${mapped_reads}/${genome_length_nt}))
+		#average_coverage_per_million_reads=$((${average_coverage}/${total_reads}*1000000))
+		
 		# Add to TSV file
-		printf "${read_mapping_file##*/}\t${bin_name_base}\t${raw_read_name_base}\t${mapped_reads}\t${total_reads}\t${genome_length_nt}\t" >> ${bin_mapping_summary_filename}
-		printf "${percent_recruited_reads}\t${average_coverage}\t${average_coverage_per_million_reads}\n" >> ${bin_mapping_summary_filename}
-
+		printf "${read_mapping_file##*/}\t${bin_name_base}\t${raw_read_name_base}\t${mapped_reads}\t${total_reads}\t${genome_length_nt}\n" >> ${bin_mapping_summary_filename}
 
 	done
 done
