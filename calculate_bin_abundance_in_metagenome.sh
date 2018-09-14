@@ -27,11 +27,13 @@ output_dir=$3
 THREADS=$4
 MEMORY=$5 # in Gigabytes
 
-(>&2 echo "[ $(date -u) ]: Running script with ${THREADS} threads and ${MEMORY} GB memory")
+(>&2 echo "[ $(date -u) ]: Running ${0##*/}")
 (>&2 echo "[ $(date -u) ]: refined_bin_dir: ${refined_bin_dir}")
 (>&2 echo "[ $(date -u) ]: raw_read_dir: ${raw_read_dir}")
 (>&2 echo "[ $(date -u) ]: output_dir: ${output_dir}")
 (>&2 echo "[ $(date -u) ]: bin_mapping_summary_filename: bin_mapping_stats.tsv (in output_dir)")
+(>&2 echo "[ $(date -u) ]: threads: ${THREADS}")
+(>&2 echo "[ $(date -u) ]: memory: ${MEMORY} GB")
 
 # Create folder structure in output dir
 mkdir -p ${output_dir}/mapping ${output_dir}/logs
@@ -78,7 +80,7 @@ for bin_path in ${bin_paths[@]}; do
 		logfile=${output_dir}/logs/${bin_name_base}_to_${raw_read_name_base}_contig_coverage_stats.log
 
 		# Read map AND pipe directly to stats (to avoid excessive input/output, which is rough on hard drives)
-		(>&2 echo "[ $(date -u) ]: mapping '${raw_read_name_base}*.fastq.gz' to '${bin_name_base}'")
+		(>&2 echo "[ $(date -u) ]: mapping '${raw_read_name_base}*fastq.gz' to '${bin_name_base}' (log: logs/${bin_name_base}_to_${raw_read_name_base}_contig_coverage_stats.log)")
 		bbwrap.sh nodisk=t ref=${contigs} in1=${R1},${se} in2=${R2},null perfectmode=t trimreaddescriptions=t \
 			out=stdout threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
 			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile} | \
@@ -100,8 +102,11 @@ for bin_path in ${bin_paths[@]}; do
 		# Add to TSV file
 		printf "${read_mapping_file##*/}\t${bin_name_base}\t${raw_read_name_base}\t${mapped_reads}\t${total_reads}\t${genome_length_nt}\n" >> ${bin_mapping_summary_filename}
 
+		# Clean up
+		rm ${output_dir}/mapping/mapped.tmp ${output_dir}/mapping/all.tmp
+
 	done
 done
 
-(>&2 echo "[ $(date -u) ]: Finished.")
+(>&2 echo "[ $(date -u) ]: ${0##*/}: Finished.")
 
