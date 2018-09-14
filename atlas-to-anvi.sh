@@ -527,10 +527,10 @@ function import_custom_bins {
 
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing bin info from ATLAS (log: misc_logs/anvi-import-collection.log)"
 	cd ${output_dir}
-	anvi-import-collection 01b_import_atlas_table/${assembly_sample_ID}_binning_results.tsv \
-					-p ${assembly_sample_ID}_samples_merged/PROFILE.db \
+	anvi-import-collection -p ${assembly_sample_ID}_samples_merged/PROFILE.db \
 					-c ${assembly_sample_ID}_contigs.db -C "metabat2" --contigs-mode \
 					--bins-info 01b_import_atlas_table/${assembly_sample_ID}_bins_info.tsv \
+					01b_import_atlas_table/${assembly_sample_ID}_binning_results.tsv
 					> misc_logs/anvi-import-collection.log 2>&1
 
 	## Example table: external_binning_of_contigs.txt
