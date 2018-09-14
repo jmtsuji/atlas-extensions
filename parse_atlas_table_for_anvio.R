@@ -187,11 +187,10 @@ summarize_contig_bin_mapping <- function(atlas_table) {
   # Collapse to unique entries
   mapping <- mapping[!duplicated(mapping),]
   
-  # # Remove special characters
-  # mapping_cleaned <- lapply(1:ncol(mapping), function(x) { remove_special_characters(mapping[,x]) })
-  # names(mapping_cleaned) <- cols_to_grab
-  # mapping <- as.data.frame(dplyr::bind_cols(mapping_cleaned))
+  # Remove rows with contig ID but no bin ID
+  mapping <- dplyr::filter(mapping, bin_id != "")
   
+  # Remove special characters
   mapping$bin_id <- remove_special_characters(mapping$bin_id)
   
   return(mapping)
