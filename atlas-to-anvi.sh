@@ -154,7 +154,22 @@ function assign_working_directory {
 		exit 1
 	fi
 
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Assigned working directory to '${work_dir}'."
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Assigned working directory to '${work_dir}'"
+
+}
+
+function clean_up_anvio_log {
+	# Gets rid of the excessively long lines output by anvi'o -- although at risk of loss of information
+	# input: filepath of anvio log as argument
+	# output: will overwrite that log with a clean one
+
+	# Grab input
+	local anvio_logfile=$1
+
+	# Simply log (get rid of lines with tons of spaces)
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Cleaning up anvio log '${anvio_logfile}'"
+	grep -v "          " ${anvio_logfile} > ${anvio_logfile}_tmp
+	mv ${anvio_logfile}_tmp ${anvio_logfile}
 
 }
 
@@ -240,7 +255,7 @@ function export_atlas_info {
 	cd ${output_dir}/01b_import_atlas_table
 
 	# The annotations table has a different name after coassembly versus standard assembly
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting information from the ATLAS annotations table"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting information from the ATLAS annotations table (log: ${output_dir}/01b_import_atlas_table/parse_atlas_table_for_anvio.log)"
 	
 	if [ ${run_mode} = "normal" ]; then
 		annotations_filepath=${work_dir}/${assembly_sample_ID}_annotations.txt
@@ -258,7 +273,7 @@ function export_atlas_info {
 	# TODO -- Will replacing with the non multi-mapping version break anything? CHECK.
 	parse_atlas_table_for_anvio.R -a ${annotations_filepath} \
 					-t ${assembly_sample_ID}_gene_taxonomy.tsv -c ${assembly_sample_ID}_binning_results.tsv \
-					-b ${assembly_sample_ID}_bins_info.tsv 2>&1 -@ ${threads} | tee parse_atlas_table_for_anvio.log
+					-b ${assembly_sample_ID}_bins_info.tsv 2>&1 -@ ${threads} > parse_atlas_table_for_anvio.log
 
 	# TODO - add a different sanity check. Function in its current form does not work if genes without taxonomic assignment are at the end of the file...
 	## Deal with the differing length of the gene calls from the gff file versus the gene taxonomy
@@ -269,12 +284,15 @@ function export_atlas_info {
 function generate_contig_database {
 
 	#### 2. Generate contigs database
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Generating the contigs database"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Generating the contigs database (log: ${output_dir}/misc_logs/anvi-gen-contigs-database.log)"
 	cd ${output_dir}
 	anvi-gen-contigs-database -f ${work_dir}/${assembly_sample_ID}_contigs.fasta \
 					-o ${assembly_sample_ID}_contigs.db -n ${assembly_sample_ID}_contigs_db \
 					--external-gene-calls ${output_dir}/01a_import_prokka/${assembly_sample_ID}_gene_calls.txt \
-					--ignore-internal-stop-codons --split-length -1 2>&1 | tee misc_logs/anvi-gen-contigs-database.log
+					--ignore-internal-stop-codons --split-length -1 > misc_logs/anvi-gen-contigs-database.log 2>&1
+
+	# Clean up log
+	clean_up_anvio_log misc_logs/anvi-gen-contigs-database.log
 
 	## Example table
 	# gene_callers_id	contig	start	stop	direction	partial	source	version
@@ -284,37 +302,33 @@ function generate_contig_database {
 }
 
 function add_hmm_annotations {
-
+	
 	#### Annotate with single-copy marker genes
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with single-copy marker genes"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with single-copy marker genes (log: ${output_dir}/misc_logs/anvi-run-hmms.log)"
 	cd ${output_dir}
 	anvi-run-hmms -c ${assembly_sample_ID}_contigs.db --num-threads ${threads} \
-					2>&1 | tee misc_logs/anvi-run-hmms.log
+					> misc_logs/anvi-run-hmms.log 2>&1
 	# anvi-run-hmms -c ${assembly_sample_ID}_contigs.db --num-threads ${threads} --hmm-profile-dir [your_dir_for_custom_hmms]
 	# anvi-display-contigs-stats ${assembly_sample_ID}_contigs.db # Will this work?
+	
+	# Clean up log
+	clean_up_anvio_log misc_logs/anvi-run-hmms.log
 
 }
 
 function add_cog_annotations {
-
+	
 	# TODO - find a way to test whether or not setup is needed. Assumes already set up for now.
 	
-	# To set up:
-	#anvi-setup-ncbi-cogs --num-threads ${threads} --just-do-it 2>&1 | tee misc_logs/anvi-setup-ncbi-cogs.log # --cog-data-dir ${cogs_data_dir}
-	
-	## To test if custom COGs database exists:
-	# TODO - finish or delete
-	#if [ ! -d ${cogs_data_dir}/[database??] ]; then
-	#	echo "ERROR: could not find COGs database at '${cogs_data_dir}/[database??]'. Exiting..."
-	#	exit 1
-	#fi
-	
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with COGs"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with COGs (log: ${output_dir}/misc_logs/anvi-run-ncbi-cogs.log)"
 	cd ${output_dir}
 	mkdir tmp
 	anvi-run-ncbi-cogs --num-threads ${threads} -c ${assembly_sample_ID}_contigs.db \
-					--temporary-dir-path tmp 2>&1 | tee misc_logs/anvi-run-ncbi-cogs.log # --cog-data-dir ${cogs_data_dir}
+					--temporary-dir-path tmp > misc_logs/anvi-run-ncbi-cogs.log 2>&1 # --cog-data-dir ${cogs_data_dir}
 	rm -rf tmp
+
+	# Clean up log
+	clean_up_anvio_log misc_logs/anvi-run-ncbi-cogs.log
 
 }
 
@@ -337,12 +351,15 @@ function import_atlas_annotations {
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing taxonomic gene classifications from ATLAS"
 	anvi-import-taxonomy-for-genes -c ${assembly_sample_ID}_contigs.db \
                                         -i 01b_import_atlas_table/${assembly_sample_ID}_gene_taxonomy.tsv \
-                                        -p default_matrix 2>&1 | tee misc_logs/anvi-import-taxonomy.log
+                                        -p default_matrix > misc_logs/anvi-import-taxonomy.log 2>&1
 
 	## Example table
 	# gene_callers_id	t_kingdom	t_phylum	t_class	t_order	t_family	t_genus	t_species
 	# 1	 	 	 	 		 	Bacteroides fragilis
 	# 2	 	 	 	 		 	Bacteroides fragilis
+
+	# Clean up log
+	clean_up_anvio_log misc_logs/anvi-import-taxonomy.log
 
 }
 
@@ -368,11 +385,14 @@ function make_read_mapping_profiles_coassembly {
 		# TODO - 'cp' step above: consider a more efficient way to do this long-term. I would just run the index step on the original ${sample}, but it might be in a write-protected directory. However, it seems inefficient to copy such large files (this is also hard on the disk).
 		
 		# Generate profile
-		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile"
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile (log: ${output_dir}/02_multi_mapping/logs/anvi-profile_${sample_name_simple}.log)"
 		anvi-profile -i ${sample_name_simple}.bam -c ${output_dir}/${assembly_sample_ID}_contigs.db \
 						--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} -T ${threads} \
 						--min-contig-length 1000 > logs/anvi-profile_${sample_name_simple}.log 2>&1
 		
+		# Clean up log
+		clean_up_anvio_log logs/anvi-profile_${sample_name_simple}.log
+
 		# Remove indexed bam
 		rm ${sample_name_simple}.bam ${sample_name_simple}.bam.bai
 		
@@ -459,6 +479,9 @@ function make_read_mapping_profiles_regular_assembly {
 						--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} -T ${threads} \
 						--min-contig-length 1000 > logs/anvi-profile_${sample_name_simple}.log 2>&1
 		
+		# Clean up log
+		clean_up_anvio_log logs/anvi-profile_${sample_name_simple}.log
+
 		# Remove indexed bam to save space
 		rm ${outfile%.sam}.bam ${outfile%.sam}.bam.bai
 		
@@ -482,12 +505,15 @@ function merge_read_mapping_profiles {
 
 	elif [ ${num_profiles} -gt 1 ]; then
 
-		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Merging information from ${num_profiles} mapped samples into contig database."
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Merging information from ${num_profiles} mapped samples into contig database (log: ${output_dir}/misc_logs/anvi-merge.log)."
 		anvi-merge ${output_dir}/02_multi_mapping/*/PROFILE.db -o ${assembly_sample_ID}_samples_merged \
 						-c ${assembly_sample_ID}_contigs.db --skip-concoct-binning -S metabat2 \
-						2>&1 | tee misc_logs/anvi-merge.log
+						> misc_logs/anvi-merge.log 2>&1
 		# Consider '--enforce-hierarchical-clustering' to cluster even with > 25,000 contigs. But could take a long time...
-
+		
+		# Clean up log
+		clean_up_anvio_log misc_logs/anvi-merge.log
+		
 	else
 
 		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ERROR: found ${num_profiles} read mapping profiles to merge; this can't work for some reason. Exiting..."
@@ -499,13 +525,13 @@ function merge_read_mapping_profiles {
 
 function import_custom_bins {
 
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing bin info from ATLAS"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing bin info from ATLAS (log: ${output_dir}/misc_logs/anvi-import-collection.log)"
 	cd ${output_dir}
 	anvi-import-collection 01b_import_atlas_table/${assembly_sample_ID}_binning_results.tsv \
 					-p ${assembly_sample_ID}_samples_merged/PROFILE.db \
 					-c ${assembly_sample_ID}_contigs.db -C "metabat2" --contigs-mode \
 					--bins-info 01b_import_atlas_table/${assembly_sample_ID}_bins_info.tsv \
-					2>&1 | tee misc_logs/anvi-import-collection.log
+					> misc_logs/anvi-import-collection.log 2>&1
 
 	## Example table: external_binning_of_contigs.txt
 	# 204_10M_MERGED.PERFECT.gz.keep_contig_878	Bin_2
@@ -520,18 +546,24 @@ function import_custom_bins {
 	# Bin_3	UNKNOWN_SOURCE	#22FF44
 	# Bin_4	UNKNOWN_SOURCE	#44FFFF
 
+	# Clean up log
+	clean_up_anvio_log misc_logs/anvi-import-collection.log
+
 }
 
 function summarize {
 
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Summarizing anvio binning statistics"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Summarizing anvio binning statistics (log: ${output_dir}/misc_logs/anvi-summarize.log)"
 	cd ${output_dir}
 	anvi-summarize -p ${assembly_sample_ID}_samples_merged/PROFILE.db \
 					-c ${assembly_sample_ID}_contigs.db -C metabat2 \
 					-o ${assembly_sample_ID}_summary --taxonomic-level t_genus \
-					--init-gene-coverages 2>&1 | tee misc_logs/anvi-summarize.log
+					--init-gene-coverages > misc_logs/anvi-summarize.log 2>&1
 	# Note: '--init-gene-coverages' takes a long time to run.
 	# Note: consider '--quick-summary' for faster run with with more minimal output.
+
+	# Clean up log
+	clean_up_anvio_log misc_logs/anvi-summarize.log
 
 }
 
@@ -587,12 +619,18 @@ function main {
 	end_time=$(date)
 
 	# Exit and report anvi-interative instructions to user
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: $(basename $0): complete. Started at ${start_time} and finished at ${end_time}."
-	printf "\nTo visualize, please run:\n"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: $(basename $0): complete. Started at ${start_time} and finished at ${end_time}.\n\n"
+	printf "# To visualize, please run:\n"
 	printf "cd ${output_dir}\n"
+	printf "# For overview of all bins:\n"
 	printf "anvi-interactive -p ${assembly_sample_ID}_samples_merged/PROFILE.db -c ${assembly_sample_ID}_contigs.db -C metabat2 --server-only -P 8080\n"
+	printf "# For refining a single bin:\n"
 	printf "bin_name=[name_of_interest]\n"
-	printf "anvi-refine -p ${assembly_sample_ID}_samples_merged/PROFILE.db -c ${assembly_sample_ID}_contigs.db -C metabat2 -b \${bin_name} --taxonomic-level t_genus --title \${bin_name} -P 8080 --server-only\n\n"
+	printf "anvi-refine -p ${assembly_sample_ID}_samples_merged/PROFILE.db -c ${assembly_sample_ID}_contigs.db -C metabat2 -b \${bin_name} --taxonomic-level t_genus --title \${bin_name} -P 8080 --server-only\n"
+	printf "# You can vary the taxonomic level visualized here -- e.g., t_genus, t_family, and so on."
+	printf "# To see the anvi'o plot generated by the above visualization commands, go onto your web browser after running and go to [your_server_url]:8080 to view. E.g., neufeldserver.uwaterloo.ca:8080. I'm assuming that you want to stream the results from a remote server here (rather than just running anvi'o on your own laptop).\n\n"
+	printf "# Then, to export the refined bin info, run:\n"
+	printf "anvi-summarize -p ${assembly_sample_ID}_samples_merged/PROFILE.db -c ${assembly_sample_ID}_contigs.db -C metabat2 -o ${assembly_sample_ID}_summary_refined --taxonomic-level t_family --init-gene-coverages 2>&1 | tee misc_logs/anvi-summarize-refined.log\n\n"
 
 }
 
