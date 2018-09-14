@@ -84,12 +84,12 @@ for bin_path in ${bin_paths}; do
 			out=${read_mapping_file} threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
 			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
 
-		(>&2 echo "[ $(date -u) ]: Calculating stats for '${mapping_filename##*/}'")
+		(>&2 echo "[ $(date -u) ]: ${raw_read_name_base} to ${bin_name_base}: Calculating stats")
 
 		# Extract mapping stats
 		mapped_reads=$(samtools view -@ ${THREADS} -c -F 4 ${read_mapping_file})
 		total_reads=$(samtools view -@ ${THREADS} -c ${read_mapping_file})
-		(>&2 echo "[ $(date -u) ]: ${read_mapping_file##*/}: ${mapped_reads} mapped; ${total_reads} total.")
+		(>&2 echo "[ $(date -u) ]: ${raw_read_name_base} to ${bin_name_base}: ${mapped_reads} mapped; ${total_reads} total.")
 
 		# Calculate additional stats
 		percent_recruited_reads=$((${mapped_reads}/${total_reads}*100))
