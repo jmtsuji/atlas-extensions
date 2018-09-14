@@ -80,14 +80,15 @@ parse_command_line_input <- function() {
     stop("Output bin info filepath required. Try -h for help message.")
   }
   
-  # Assign default for threads if nothing provided
+  # Assign defaults
   if ( is.null(opt$include_domain) ) {
     opt$include_domain <- FALSE
   } else {
     # Set include_domain to TRUE if anything was provided
     opt$include_domain <- TRUE
   }
-
+  
+  # Assign default for threads if nothing provided
   if ( is.null(opt$threads) ) {
     opt$threads <- 1
   }
@@ -233,6 +234,7 @@ main <- function() {
   cat(paste("Output taxonomy filepath:", output_tax_filename, "\n"))
   cat(paste("Output contig/bin summary filepath:", output_contig_bin_filename, "\n"))
   cat(paste("Output bin info template filepath:", output_bin_info_filename, "\n"))
+  cat(paste("Include t_domain in the output taxonomy file:", include_domain, "\n"))
   cat(paste("Threads:", threads, "\n"))
   cat("\n")
   
