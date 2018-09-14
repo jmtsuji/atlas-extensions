@@ -255,7 +255,7 @@ function export_atlas_info {
 	cd ${output_dir}/01b_import_atlas_table
 
 	# The annotations table has a different name after coassembly versus standard assembly
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting information from the ATLAS annotations table (log: ${output_dir}/01b_import_atlas_table/parse_atlas_table_for_anvio.log)"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Exporting information from the ATLAS annotations table (log: 01b_import_atlas_table/parse_atlas_table_for_anvio.log)"
 	
 	if [ ${run_mode} = "normal" ]; then
 		annotations_filepath=${work_dir}/${assembly_sample_ID}_annotations.txt
@@ -273,7 +273,7 @@ function export_atlas_info {
 	# TODO -- Will replacing with the non multi-mapping version break anything? CHECK.
 	parse_atlas_table_for_anvio.R -a ${annotations_filepath} \
 					-t ${assembly_sample_ID}_gene_taxonomy.tsv -c ${assembly_sample_ID}_binning_results.tsv \
-					-b ${assembly_sample_ID}_bins_info.tsv 2>&1 -@ ${threads} > parse_atlas_table_for_anvio.log
+					-b ${assembly_sample_ID}_bins_info.tsv 2>&1 -d TRUE -@ ${threads} > parse_atlas_table_for_anvio.log
 
 	# TODO - add a different sanity check. Function in its current form does not work if genes without taxonomic assignment are at the end of the file...
 	## Deal with the differing length of the gene calls from the gff file versus the gene taxonomy
@@ -284,7 +284,7 @@ function export_atlas_info {
 function generate_contig_database {
 
 	#### 2. Generate contigs database
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Generating the contigs database (log: ${output_dir}/misc_logs/anvi-gen-contigs-database.log)"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Generating the contigs database (log: misc_logs/anvi-gen-contigs-database.log)"
 	cd ${output_dir}
 	anvi-gen-contigs-database -f ${work_dir}/${assembly_sample_ID}_contigs.fasta \
 					-o ${assembly_sample_ID}_contigs.db -n ${assembly_sample_ID}_contigs_db \
@@ -304,7 +304,7 @@ function generate_contig_database {
 function add_hmm_annotations {
 	
 	#### Annotate with single-copy marker genes
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with single-copy marker genes (log: ${output_dir}/misc_logs/anvi-run-hmms.log)"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with single-copy marker genes (log: misc_logs/anvi-run-hmms.log)"
 	cd ${output_dir}
 	anvi-run-hmms -c ${assembly_sample_ID}_contigs.db --num-threads ${threads} \
 					> misc_logs/anvi-run-hmms.log 2>&1
@@ -320,7 +320,7 @@ function add_cog_annotations {
 	
 	# TODO - find a way to test whether or not setup is needed. Assumes already set up for now.
 	
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with COGs (log: ${output_dir}/misc_logs/anvi-run-ncbi-cogs.log)"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Annotating with COGs (log: misc_logs/anvi-run-ncbi-cogs.log)"
 	cd ${output_dir}
 	mkdir tmp
 	anvi-run-ncbi-cogs --num-threads ${threads} -c ${assembly_sample_ID}_contigs.db \
@@ -348,7 +348,7 @@ function import_atlas_annotations {
 
 	
 	#### Import taxonomy info
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing taxonomic gene classifications from ATLAS"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing taxonomic gene classifications from ATLAS (log: misc_logs/anvi-import-taxonomy.log)"
 	anvi-import-taxonomy-for-genes -c ${assembly_sample_ID}_contigs.db \
                                         -i 01b_import_atlas_table/${assembly_sample_ID}_gene_taxonomy.tsv \
                                         -p default_matrix > misc_logs/anvi-import-taxonomy.log 2>&1
@@ -385,7 +385,7 @@ function make_read_mapping_profiles_coassembly {
 		# TODO - 'cp' step above: consider a more efficient way to do this long-term. I would just run the index step on the original ${sample}, but it might be in a write-protected directory. However, it seems inefficient to copy such large files (this is also hard on the disk).
 		
 		# Generate profile
-		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile (log: ${output_dir}/02_multi_mapping/logs/anvi-profile_${sample_name_simple}.log)"
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile (log: 02_multi_mapping/logs/anvi-profile_${sample_name_simple}.log)"
 		anvi-profile -i ${sample_name_simple}.bam -c ${output_dir}/${assembly_sample_ID}_contigs.db \
 						--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} -T ${threads} \
 						--min-contig-length 1000 > logs/anvi-profile_${sample_name_simple}.log 2>&1
@@ -474,7 +474,7 @@ function make_read_mapping_profiles_regular_assembly {
 		rm ${outfile}
 		
 		# Generate profile
-		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile (log: '${output_dir}/02_multi_mapping/logs/anvi-profile_${sample_name_simple}.log')"
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${sample_name}: creating mapping profile (log: 02_multi_mapping/logs/anvi-profile_${sample_name_simple}.log)"
 		anvi-profile -i ${outfile%.sam}.bam -c ${output_dir}/${assembly_sample_ID}_contigs.db \
 						--output-dir ${sample_name_simple} --sample-name ${sample_name_simple} -T ${threads} \
 						--min-contig-length 1000 > logs/anvi-profile_${sample_name_simple}.log 2>&1
@@ -505,7 +505,7 @@ function merge_read_mapping_profiles {
 
 	elif [ ${num_profiles} -gt 1 ]; then
 
-		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Merging information from ${num_profiles} mapped samples into contig database (log: ${output_dir}/misc_logs/anvi-merge.log)."
+		echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Merging information from ${num_profiles} mapped samples into contig database (log: misc_logs/anvi-merge.log)."
 		anvi-merge ${output_dir}/02_multi_mapping/*/PROFILE.db -o ${assembly_sample_ID}_samples_merged \
 						-c ${assembly_sample_ID}_contigs.db --skip-concoct-binning -S metabat2 \
 						> misc_logs/anvi-merge.log 2>&1
@@ -525,7 +525,7 @@ function merge_read_mapping_profiles {
 
 function import_custom_bins {
 
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing bin info from ATLAS (log: ${output_dir}/misc_logs/anvi-import-collection.log)"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Importing bin info from ATLAS (log: misc_logs/anvi-import-collection.log)"
 	cd ${output_dir}
 	anvi-import-collection 01b_import_atlas_table/${assembly_sample_ID}_binning_results.tsv \
 					-p ${assembly_sample_ID}_samples_merged/PROFILE.db \
@@ -553,7 +553,7 @@ function import_custom_bins {
 
 function summarize {
 
-	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Summarizing anvio binning statistics (log: ${output_dir}/misc_logs/anvi-summarize.log)"
+	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Summarizing anvio binning statistics (log: misc_logs/anvi-summarize.log)"
 	cd ${output_dir}
 	anvi-summarize -p ${assembly_sample_ID}_samples_merged/PROFILE.db \
 					-c ${assembly_sample_ID}_contigs.db -C metabat2 \
