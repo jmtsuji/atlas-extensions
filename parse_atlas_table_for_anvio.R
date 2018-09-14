@@ -104,6 +104,16 @@ parse_command_line_input <- function() {
   
 }
 
+# Helper function for timestamps
+ts <- function() {
+  
+  datetime_utc <- format(as.POSIXlt(Sys.time(), tz = "UTC"), "%a %d %b %Y %H:%M:%S %Z")
+  
+  date_message <- paste("[ ", datetime_utc, " ]: ", sep = "")
+  
+  return(date_message)
+}
+
 parse_taxonomy_preface <- function(taxonomy_rank_entry) {
   # e.g., taxonomy_rank_entry <- "k__Bacteria"
   # Want to convert to "Bacteria"
@@ -228,41 +238,40 @@ main <- function() {
   }
   
   # Startup messages
-  cat(paste("Running parse_atlas_table_for_anvio.R, version: ", SCRIPT_VERSION, "\n\n", sep = ""))
-  cat(paste("ATLAS table filepath:", atlas_table_filename, "\n"))
-  cat(paste("Output taxonomy filepath:", output_tax_filename, "\n"))
-  cat(paste("Output contig/bin summary filepath:", output_contig_bin_filename, "\n"))
-  cat(paste("Output bin info template filepath:", output_bin_info_filename, "\n"))
-  cat(paste("Include t_domain in the output taxonomy file:", include_domain, "\n"))
-  cat(paste("Threads:", threads, "\n"))
-  cat("\n")
+  cat(paste(ts(), "Running parse_atlas_table_for_anvio.R, version: ", SCRIPT_VERSION, "\n", sep = ""))
+  cat(paste(ts(), "ATLAS table filepath: ", atlas_table_filename, "\n", sep = ""))
+  cat(paste(ts(), "Output taxonomy filepath: ", output_tax_filename, "\n", sep = ""))
+  cat(paste(ts(), "Output contig/bin summary filepath: ", output_contig_bin_filename, "\n", sep = ""))
+  cat(paste(ts(), "Output bin info template filepath: ", output_bin_info_filename, "\n", sep = ""))
+  cat(paste(ts(), "Include t_domain in the output taxonomy file: ", include_domain, "\n", sep = ""))
+  cat(paste(ts(), "Threads: ", threads, "\n", sep = ""))
   
   # Read the table
-  cat("Reading ATLAS table\n")
+  cat(paste(ts(), "Reading ATLAS table\n", sep = ""))
   atlas_table <- read.table(atlas_table_filename, sep = "\t", header = TRUE, stringsAsFactors = FALSE, comment.char = "", quote = "")
   
   # Make the taxonomy table
-  cat("Parsing taxonomy\n")
+  cat(paste(ts(), "Parsing taxonomy\n", sep = ""))
   parsed_tax <- mclapply(1:nrow(atlas_table), function(x) { parse_greengenes_taxonomy(greengenes_entry_vector = atlas_table[x,9], row_num = x, 
                                                                                     contig_id = atlas_table[x,1], locus_tag = atlas_table[x,2]) },
                          mc.cores = threads)
   parsed_tax <- dplyr::bind_rows(parsed_tax)
   
   # Make the contig-bin mapping file
-  cat("Summarizing contig-to-bin mapping\n")
+  cat(paste(ts(), "Summarizing contig-to-bin mapping\n", sep = ""))
   contig_bin_mapping <- summarize_contig_bin_mapping(atlas_table)
   
   # Make the bin info file template
-  cat("Generating bin info template file\n")
+  cat(paste(ts(), "Generating bin info template file\n", sep = ""))
   bin_info <- summarize_bin_info(atlas_table)
   
   # Export
-  cat("Writing output\n")
+  cat(paste(ts(), "Writing output\n", sep = ""))
   write.table(parsed_tax, file = output_tax_filename, sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
   write.table(contig_bin_mapping, file = output_contig_bin_filename, sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
   write.table(bin_info, file = output_bin_info_filename, sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
   
-  cat("\nparse_atlas_table_for_anvio.R: finished.\n")
+  cat(paste(ts(), "parse_atlas_table_for_anvio.R: finished.\n", sep = ""))
 }
 
 main()
