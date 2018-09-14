@@ -413,7 +413,7 @@ function make_read_mapping_profiles_regular_assembly {
 	sample_filepaths=($(cut -d $'\t' -f 2 ${read_mapping_samples_table} | tail -n +2))
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: ${#sample_names[@]} samples provided."
 
-	for i in ${#sample_names[@]}; do
+	for i in $(seq 1 ${#sample_names[@]}); do
 		j=$((${i}-1))
 		sample_name=${sample_names[${j}]}
 		sample_name_simple=$(sed s/'-'/'_'/g <<<${sample_name}) # Get rid of dashes
