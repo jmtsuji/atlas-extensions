@@ -114,6 +114,11 @@ ts <- function() {
   return(date_message)
 }
 
+# Fix bin names that start with a number (for anvi'o support)
+standardize_bin_names <- function(bin_ids) {
+  return(gsub(pattern = "^([0-9])", replacement = "x\\1", x = bin_ids))
+}
+
 parse_taxonomy_preface <- function(taxonomy_rank_entry) {
   # e.g., taxonomy_rank_entry <- "k__Bacteria"
   # Want to convert to "Bacteria"
@@ -249,6 +254,9 @@ main <- function() {
   # Read the table
   cat(paste(ts(), "Reading ATLAS table\n", sep = ""))
   atlas_table <- read.table(atlas_table_filename, sep = "\t", header = TRUE, stringsAsFactors = FALSE, comment.char = "", quote = "")
+  
+  # If any bin names start with a number, add an 'x' in front (anvi'o needs this)
+  atlas_table$bin_id <- standardize_bin_names(atlas_table$bin_id)
   
   # Make the taxonomy table
   cat(paste(ts(), "Parsing taxonomy\n", sep = ""))
