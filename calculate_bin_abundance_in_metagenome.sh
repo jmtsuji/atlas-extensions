@@ -15,7 +15,7 @@ if [ $# == 0 ]
     printf "   2. raw_read_dir: Directory containing QC'ed, unassembled metagenomic reads with naming structure matching that of the ATLAS pipeline.\n"
     printf "                    *QC_R1.fastq.gz, *QC_R2.fastq.gz, and *QC_se.fastq.gz all needed. Symlinks are okay.\n"
     printf "   3. output_dir: Directory where you want the results to be output. Anything already there might be overwritten.\n"
-    printf "   4. threads: number of threads to run.\n"
+    printf "   4. threads: number of threads to run. Minimum 2.\n"
     printf "   5. memory: in gigabytes.\n\n"
     exit 1
 fi
@@ -27,6 +27,13 @@ output_dir=$3
 THREADS=$4
 MEMORY=$5 # in Gigabytes
 
+# Check threads >= 2 (otherwise, will send -@ 0 argument to samtools view!)
+if [ ${THREADS} < 2 ]; then
+	(>&2 echo "ERROR: You specified ${THREADS} threads, when the minimum is 2. Exiting...")
+	exit 1
+done
+
+# Startup reporting
 (>&2 echo "[ $(date -u) ]: Running ${0##*/}")
 (>&2 echo "[ $(date -u) ]: refined_bin_dir: ${refined_bin_dir}")
 (>&2 echo "[ $(date -u) ]: raw_read_dir: ${raw_read_dir}")
