@@ -79,7 +79,7 @@ for bin_path in ${bin_paths}; do
 		logfile=${output_dir}/logs/${bin_name_base}_to_${raw_read_name_base}_contig_coverage_stats.log
 
 		# Read map
-		(>&2 echo "[$(date '+%y%m%d %H:%M:%S %Z')]: mapping '${raw_read_name_base}*.fastq.gz' to '${bin_name_base}'")
+		(>&2 echo "[$(date -u)]: mapping '${raw_read_name_base}*.fastq.gz' to '${bin_name_base}'")
 		bbwrap.sh nodisk=t ref=${contigs} in1=${R1},${se} in2=${R2},null perfectmode=t trimreaddescriptions=t \
 			out=${read_mapping_file} threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
 			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile}
