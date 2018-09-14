@@ -166,9 +166,13 @@ function clean_up_anvio_log {
 	# Grab input
 	local anvio_logfile=$1
 
-	# Simply log (get rid of lines with tons of spaces)
+	# Simplify log (get rid of lines with tons of spaces)
 	echo "[$(date '+%y%m%d %H:%M:%S %Z')]: Cleaning up anvio log '${anvio_logfile}'"
+
+	# Temporarily allow for exit status 1 in case the input file is empty
+	set +e
 	grep -v "          " ${anvio_logfile} > ${anvio_logfile}_tmp
+	set -e
 	mv ${anvio_logfile}_tmp ${anvio_logfile}
 
 }
@@ -530,8 +534,7 @@ function import_custom_bins {
 	anvi-import-collection -p ${assembly_sample_ID}_samples_merged/PROFILE.db \
 					-c ${assembly_sample_ID}_contigs.db -C "metabat2" --contigs-mode \
 					--bins-info 01b_import_atlas_table/${assembly_sample_ID}_bins_info.tsv \
-					01b_import_atlas_table/${assembly_sample_ID}_binning_results.tsv
-					> misc_logs/anvi-import-collection.log 2>&1
+					01b_import_atlas_table/${assembly_sample_ID}_binning_results.tsv > misc_logs/anvi-import-collection.log 2>&1
 
 	## Example table: external_binning_of_contigs.txt
 	# 204_10M_MERGED.PERFECT.gz.keep_contig_878	Bin_2
