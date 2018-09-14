@@ -273,7 +273,7 @@ function export_atlas_info {
 	# TODO -- Will replacing with the non multi-mapping version break anything? CHECK.
 	parse_atlas_table_for_anvio.R -a ${annotations_filepath} \
 					-t ${assembly_sample_ID}_gene_taxonomy.tsv -c ${assembly_sample_ID}_binning_results.tsv \
-					-b ${assembly_sample_ID}_bins_info.tsv 2>&1 -d TRUE -@ ${threads} > parse_atlas_table_for_anvio.log
+					-b ${assembly_sample_ID}_bins_info.tsv -d TRUE -@ ${threads} > parse_atlas_table_for_anvio.log 2>&1
 
 	# TODO - add a different sanity check. Function in its current form does not work if genes without taxonomic assignment are at the end of the file...
 	## Deal with the differing length of the gene calls from the gff file versus the gene taxonomy
