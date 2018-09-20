@@ -67,24 +67,24 @@ parse_command_line_input <- function() {
     
     cat("calculate_coverage_stats.R: Summarizes 'samtools depth' coverage information forunassembled reads mapped to genome bins.\n")
     cat("Copyright Neufeld Lab, 2018\n")
-    cat("Contact Jackson M. Tsuji (jackson.@uwaterloo.ca) for bug reports or feature requests.\n")
+    cat("Contact Jackson M. Tsuji (jackson.@uwaterloo.ca) for bug reports or feature requests.\n\n")
     
     cat(getopt(params, usage = TRUE))
     
     cat("\n")
     
     cat("Details:\n", "--samtools_coverage_table\tFilepath for TSV-format coverage table output by 'samtools depth -aa' for a single BAM file. [Required]\n",
-        "--read_length\t\tExpected length of individual reads for the unassembled reads (e.g., 200). [Required]\n",
+        "--read_length\t\t\tExpected length of individual reads for the unassembled reads (e.g., 200). [Required]\n",
         "--bin_ID\t\t\tID of the input genome bin (e.g., 'Bin001') [Optional]\n",
         "--metagenome_ID\t\tID of the metagenome used for mapping reads (e.g., 'Metagenome001'). [Optional]\n",
-        "--ID_delimiter\t\tAdvanced feature: if you want to parse out the bin_ID and metagenome_ID from the filename of the coverage_table, then input the string delimiter between the bin_ID and metagenome_ID in the filename (e.g., '_to_' for 'Metagenome001_to_Bin001.tsv'). Filename MUST contain 'metagenome_ID[delimiter]bin_ID.extension' and NOTHING ELSE for this to work. [Optional]\n",
-        "--zero_coverage_threshold\t\tAdvanced feature: how many 0's across the positions of a contig does it take for the script to consider that contig to have a zero-coverage event? [Optional; default 1]\n\n")
+        "--ID_delimiter\t\t\tAdvanced feature: if you want to parse out the bin_ID and metagenome_ID from the filename of the coverage_table, then input the string delimiter between the bin_ID and metagenome_ID in the filename (e.g., '_to_' for 'Metagenome001_to_Bin001.tsv'). Filename MUST contain 'metagenome_ID[delimiter]bin_ID.extension' and NOTHING ELSE for this to work. [Optional]\n",
+        "--zero_coverage_threshold\tAdvanced feature: how many 0's across the positions of a contig does it take for the script to consider that contig to have a zero-coverage event? [Optional; default 1]\n\n")
     
     quit(status = 1)
   }
   
   # Exit if required inputs are not provided
-  if ( is.null(opt$coverage_table) ) {
+  if ( is.null(opt$samtools_coverage_table) ) {
     stop("Coverage table from 'samtools depth -aa' required. Try -h for help message.")
   }
   if ( is.null(opt$read_length) ) {
@@ -111,7 +111,7 @@ parse_command_line_input <- function() {
   # Make variables from provided input and save as global variables (<<-)
   input_coverage_table_filename <<- opt$samtools_coverage_table
   read_length <<- opt$read_length
-  zero_coverage_threshold <- opt$zero_coverage_threshold
+  zero_coverage_threshold <<- opt$zero_coverage_threshold
   if ( parse_from_input_filename == FALSE ) {
     bin_ID <<- opt$bin_ID
     metagenome_ID <<- opt$metagenome_ID
