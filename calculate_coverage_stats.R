@@ -361,7 +361,7 @@ main <- function() {
                                                     zero_coverage_threshold = zero_coverage_threshold)
   
   ### Write supplemental table with per-contig stats
-  message(ts(), "Binding supplementary table of per-contig coverage statsand writing to file")
+  message(ts(), "Binding supplementary table of per-contig coverage stats and writing to file")
   supplemental_table <- bind_supplemental_table(bin_ID, metagenome_ID, per_contig_stats, per_contig_stats_filtered)
   write.table(x = supplemental_table, file = output_contig_stats_table_filename, sep = "\t", row.names = FALSE, col.names = TRUE)
   
