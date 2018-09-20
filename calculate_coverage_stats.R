@@ -60,7 +60,7 @@ parse_command_line_input <- function() {
                      'read_length', 'l', 1, "numeric",
                      'bin_ID', 'b', 2, "character",
                      'metagenome_ID', 'm', 2, "character",
-                     'ID_delimiter', 'd', 2, "logical",
+                     'ID_delimiter', 'd', 2, "character",
                      'zero_coverage_threshold', 'z', 2, "numeric",
                      'help', 'h', 2, "character"), byrow=TRUE, ncol=4)
   
