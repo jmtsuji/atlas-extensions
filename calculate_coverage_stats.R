@@ -24,6 +24,9 @@ if (RUN_COMMAND_LINE == FALSE) {
   # Input file (should be the output of 'samtools depth -aa' when run on a single BAM file)
   input_coverage_table_filename <- c("example_samtools_coverage_depth.tsv")
   
+  # Output file for supplementary per-contig stats. Optional. Set to NULL for the script to determine an output name based on the input table name.
+  output_contig_stats_table_filename <- NULL
+  
   # Expected read length for the metagenomic dataset
   read_length <- 250
   
@@ -53,6 +56,7 @@ parse_command_line_input <- function() {
   
   # Define flags
   params <- matrix(c('samtools_coverage_table', 'i', 1, "character",
+                     'output_contig_stats_table', 'o', 2, "character",
                      'read_length', 'l', 1, "numeric",
                      'bin_ID', 'b', 2, "character",
                      'metagenome_ID', 'm', 2, "character",
@@ -74,6 +78,7 @@ parse_command_line_input <- function() {
     cat("\n")
     
     cat("Details:\n", "--samtools_coverage_table\tFilepath for TSV-format coverage table output by 'samtools depth -aa' for a single BAM file. [Required]\n",
+        "--output_contig_stats_table\tFilepath for the TSV-format per-contig coverage stats table that this script will write [Optional - can predict based on input filename]\n",
         "--read_length\t\t\tExpected length of individual reads for the unassembled reads (e.g., 200). [Required]\n",
         "--bin_ID\t\t\tID of the input genome bin (e.g., 'Bin001') [Optional]\n",
         "--metagenome_ID\t\tID of the metagenome used for mapping reads (e.g., 'Metagenome001'). [Optional]\n",
@@ -107,9 +112,14 @@ parse_command_line_input <- function() {
   if ( is.null(opt$zero_coverage_threshold) == TRUE ) {
     opt$zero_coverage_threshold <- 1
   }
+  if ( is.null(opt$output_contig_stats_table) == TRUE ) {
+    opt$output_contig_stats_table <- paste(file_path_sans_ext(opt$samtools_coverage_table), 
+                                           "_per_contig_stats.tsv", sep = "")
+  }
   
   # Make variables from provided input and save as global variables (<<-)
   input_coverage_table_filename <<- opt$samtools_coverage_table
+  output_contig_stats_table_filename <<- opt$output_contig_stats_table
   read_length <<- opt$read_length
   zero_coverage_threshold <<- opt$zero_coverage_threshold
   if ( parse_from_input_filename == FALSE ) {
@@ -297,6 +307,7 @@ main <- function() {
   # Startup messages
   message(ts(), "Running calculate_coverage_stats.R")
   message(ts(), "Input samtools depth coverage table: ", input_coverage_table_filename)
+  message(ts(), "Output supplementary table (main results to STDOUT): ", output_contig_stats_table_filename)
   message(ts(), "Expected read length: ", read_length)
   message(ts(), "Threshold for searching for zero-coverage sites on a contig: ", zero_coverage_threshold)
   message(ts(), "bin_ID and metagenome_ID explicitly provided: ", !(parse_from_input_filename))
@@ -350,16 +361,9 @@ main <- function() {
                                                     zero_coverage_threshold = zero_coverage_threshold)
   
   ### Write supplemental table with per-contig stats
-  # Make the table
-  message(ts(), "Binding supplementary table of per-contig coverage stats")
+  message(ts(), "Binding supplementary table of per-contig coverage statsand writing to file")
   supplemental_table <- bind_supplemental_table(bin_ID, metagenome_ID, per_contig_stats, per_contig_stats_filtered)
-  # Determine output filepath
-  filename_base <- file_path_sans_ext(basename(input_coverage_table_filename))
-  output_filename <- paste(filename_base, "_per_contig_stats.tsv", sep = "")
-  output_filepath <- file.path(dirname(input_coverage_table_filename), output_filename)
-  # Write table
-  message(ts(), "Writing supplementary table to '", output_filename, "'")
-  write.table(x = supplemental_table, file = output_filepath, sep = "\t", row.names = FALSE, col.names = TRUE)
+  write.table(x = supplemental_table, file = output_contig_stats_table_filename, sep = "\t", row.names = FALSE, col.names = TRUE)
   
   # Print whole-sample stats to STDOUT
   message(ts(), "Summarizing overall stats (writing to STDOUT)")
