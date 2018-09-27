@@ -43,7 +43,7 @@ memory=$5 # in Gigabytes
 (>&2 echo "[ $(date -u) ]: memory: ${memory} GB")
 
 # Create folder structure in output dir
-mkdir -p ${output_dir}/mapping ${output_dir}/logs
+mkdir -p ${output_dir}/mapping ${output_dir}/logs ${output_dir}/coverage
 bin_mapping_summary_filename="${output_dir}/bin_mapping_stats.tsv"
 
 # Find bin and raw read files
@@ -57,10 +57,14 @@ iterations=$((${#bin_paths[@]}*${#raw_read_paths[@]}))
 
 # Initialize output read stats file
 (>&2 echo "[ $(date -u) ]: Initiatilizing '${bin_mapping_summary_filename##*/}'")
-printf "mapping_filename\tgenome\tmetagenome\tmapped_reads\ttotal_reads\tgenome_length_nt\n" > ${bin_mapping_summary_filename}
+printf "genome\tmetagenome\tmapped_reads\ttotal_reads\tgenome_length_nt\n" > ${bin_mapping_summary_filename}
 
 # Run all against all in a nested 'for' loop
 for bin_path in ${bin_paths[@]}; do
+
+	# Get base name of bin
+	bin_name_base=${bin_path%.*}
+	bin_name_base=${bin_name_base##*/}
 
 	# Get total nucleotide length in bin for later
 	genome_char_count=$(grep -v "^>" ${bin_path} | wc)
@@ -72,9 +76,7 @@ for bin_path in ${bin_paths[@]}; do
 
 	for raw_read_path in ${raw_read_paths[@]}; do
 
-		# Get base names of bins and reads
-		bin_name_base=${bin_path%.*}
-		bin_name_base=${bin_name_base##*/}
+		# Get base names of reads
 		raw_read_name_base=${raw_read_path%*_QC_R1.fastq.gz}
 		raw_read_name_base=${raw_read_name_base##*/}
 
@@ -82,24 +84,24 @@ for bin_path in ${bin_paths[@]}; do
 		R1=${raw_read_dir}/${raw_read_name_base}_QC_R1.fastq.gz
 		R2=${raw_read_dir}/${raw_read_name_base}_QC_R2.fastq.gz
 		se=${raw_read_dir}/${raw_read_name_base}_QC_se.fastq.gz
-		contigs=${bin_path}
-		read_mapping_file=${output_dir}/mapping/${bin_name_base}_to_${raw_read_name_base}.sam
 		logfile=${output_dir}/logs/${bin_name_base}_to_${raw_read_name_base}_contig_coverage_stats.log
 
 		# Read map AND pipe directly to stats (to avoid excessive input/output, which is rough on hard drives)
-		(>&2 echo "[ $(date -u) ]: mapping '${raw_read_name_base}*fastq.gz' to '${bin_name_base}' (log: logs/${bin_name_base}_to_${raw_read_name_base}_contig_coverage_stats.log)")
-		bbwrap.sh nodisk=t ref=${contigs} in1=${R1},${se} in2=${R2},null perfectmode=t trimreaddescriptions=t \
+		(>&2 echo "[ $(date -u) ]: mapping '${raw_read_name_base}*fastq.gz' to '${bin_name_base}' (log: logs/${raw_read_name_base}_to_${bin_name_base}_contig_coverage_stats.log)")
+		bbwrap.sh nodisk=t ref=${bin_path} in1=${R1},${se} in2=${R2},null perfectmode=t trimreaddescriptions=t \
 			out=stdout threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
 			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${memory}G 2> ${logfile} | \
 			tee >(samtools view -@ $((${threads}/2)) -c -F 4 > ${output_dir}/mapping/mapped.tmp) | 
-			samtools view -@ $((${threads}/2)) -c > ${output_dir}/mapping/all.tmp
+			>(samtools view -@ $((${threads}/2)) -c > ${output_dir}/mapping/all.tmp) |
+			samtools view -@ ${THREADS} -O bam | samtools sort -@ ${THREADS} | \
+			samtools depth -aa - > ${output_dir}/coverage/${raw_read_name_base}_to_${bin_name_base}.tsv
 
 		# (>&2 echo "[ $(date -u) ]: ${raw_read_name_base} to ${bin_name_base}: Calculating stats")
 
 		# Extract mapping stats
 		mapped_reads=$(cat ${output_dir}/mapping/mapped.tmp)
 		total_reads=$(cat ${output_dir}/mapping/all.tmp)
-		(>&2 echo "[ $(date -u) ]: ${raw_read_name_base} to ${bin_name_base}: ${mapped_reads} mapped; ${total_reads} total. Adding to TSV.")
+		(>&2 echo "[ $(date -u) ]: ${bin_name_base} to ${raw_read_name_base}: ${mapped_reads} mapped; ${total_reads} total. Adding to TSV.")
 
 		## Calculate additional stats
 		#percent_recruited_reads=$((${mapped_reads}/${total_reads}*100))
@@ -107,13 +109,16 @@ for bin_path in ${bin_paths[@]}; do
 		#average_coverage_per_million_reads=$((${average_coverage}/${total_reads}*1000000))
 		
 		# Add to TSV file
-		printf "${read_mapping_file##*/}\t${bin_name_base}\t${raw_read_name_base}\t${mapped_reads}\t${total_reads}\t${genome_length_nt}\n" >> ${bin_mapping_summary_filename}
+		printf "${bin_name_base}\t${raw_read_name_base}\t${mapped_reads}\t${total_reads}\t${genome_length_nt}\n" >> ${bin_mapping_summary_filename}
 
 		# Clean up
 		rm ${output_dir}/mapping/mapped.tmp ${output_dir}/mapping/all.tmp
 
 	done
 done
+
+# Cleanup
+rm -r ${output_dir}/mapping
 
 (>&2 echo "[ $(date -u) ]: ${0##*/}: Finished.")
 
