@@ -137,11 +137,6 @@ for bin_path in ${bin_paths[@]}; do
 		mapped_reads=$(cat ${output_dir}/mapping/mapped.tmp)
 		(>&2 echo "${mapped_reads} mapped reads")
 
-		## Calculate additional stats - doesn't work in Bash alone because of rounding small numbers
-		#percent_recruited_reads=$((${mapped_reads}/${total_reads}*100))
-		#average_coverage=$((${mapped_reads}/${genome_length_nt}))
-		#average_coverage_per_million_reads=$((${average_coverage}/${total_reads}*1000000))
-
 		# Add to TSV file
 		printf "${bin_name_base}\t${raw_read_name_base}\t${mapped_reads}\t${genome_length_nt}\n" >> ${bin_mapping_summary_filename}
 
