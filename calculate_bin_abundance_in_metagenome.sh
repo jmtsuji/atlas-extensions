@@ -167,25 +167,36 @@ for bin_path in ${bin_paths[@]}; do
 		rm ${output_dir}/mapping/mapped.tmp
 
 
-		# Set some variables for coverage stats
-		coverage_by_contig_filename="${output_dir}/coverage/by_contig/${raw_read_name_base}_to_${bin_name_base}.tsv"
-		coverage_logfile="${output_dir}/coverage/logs/${raw_read_name_base}_to_${bin_name_base}_summary.log"
-		zero_cov_threshold=100 # TODO - HARD-CODED for now!
+		# Only determine coverage stats if mapped reads > 0
+		if [ ${mapped_reads} -gt 0 ]; then
 
-		# Roughly estimate read length of metagenome
-		# TODO - improve this.
-		# Temporarily disable script exiting with non-normal exit statuses. 'Head' may be causing problems - see https://stackoverflow.com/a/19120674 (accessed 180927)
-		set +e
-		read_length=$(($(zcat ${R1} | head -n 2 | tail -n 1 | wc -m)-1))
-		set -e
+			# Set some variables for coverage stats
+			coverage_by_contig_filename="${output_dir}/coverage/by_contig/${raw_read_name_base}_to_${bin_name_base}.tsv"
+			coverage_logfile="${output_dir}/coverage/logs/${raw_read_name_base}_to_${bin_name_base}_summary.log"
+			zero_cov_threshold=100 # TODO - HARD-CODED for now!
 
-		# Summarize coverage stats
-		(>&2 echo "[ $(date -u) ]: ${iteration}: summarizing coverage stats (assumed read length of ${read_length})")
-		calculate_coverage_stats.R --samtools_coverage_table ${samtools_depth_filename} --bin_ID ${bin_name_base} \
-			--metagenome_ID ${raw_read_name_base} --output_contig_stats_table ${coverage_by_contig_filename} \
-			--read_length ${read_length} --zero_coverage_threshold ${zero_cov_threshold} 2> ${coverage_logfile} | \
-			tail -n 1 >> ${coverage_summary_filename}
+			# Roughly estimate read length of metagenome
+			# TODO - improve this.
+			# Temporarily disable script exiting with non-normal exit statuses. 'Head' may be causing problems - see https://stackoverflow.com/a/19120674 (accessed 180927)
+			set +e
+			read_length=$(($(zcat ${R1} | head -n 2 | tail -n 1 | wc -m)-1))
+			set -e
 
+			# Summarize coverage stats
+			(>&2 echo "[ $(date -u) ]: ${iteration}: summarizing coverage stats (assumed read length of ${read_length})")
+			calculate_coverage_stats.R --samtools_coverage_table ${samtools_depth_filename} --bin_ID ${bin_name_base} \
+				--metagenome_ID ${raw_read_name_base} --output_contig_stats_table ${coverage_by_contig_filename} \
+				--read_length ${read_length} --zero_coverage_threshold ${zero_cov_threshold} 2> ${coverage_logfile} | \
+				tail -n 1 >> ${coverage_summary_filename}
+
+		else
+
+			(>&2 echo "[ $(date -u) ]: ${iteration}: Skipping coverage stats summary due to 0 mapped reads")
+			# Make empty output files
+			touch "${output_dir}/coverage/by_contig/${raw_read_name_base}_to_${bin_name_base}.tsv" \
+				"${output_dir}/coverage/logs/${raw_read_name_base}_to_${bin_name_base}_summary.log"
+
+		fi
 
 		# Increase the iterator for tracking the number of processed genome-metagenome pairs
 		iteration_tmp=$((${iteration}+1))
