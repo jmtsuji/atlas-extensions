@@ -43,8 +43,9 @@ memory=$5 # in Gigabytes
 (>&2 echo "[ $(date -u) ]: memory: ${memory} GB")
 
 # Create folder structure in output dir
-mkdir -p ${output_dir}/mapping ${output_dir}/logs ${output_dir}/coverage
-bin_mapping_summary_filename="${output_dir}/bin_mapping_stats.tsv"
+mkdir -p ${output_dir}/mapping ${output_dir}/logs ${output_dir}/coverage ${output_dir}/detailed_stats
+read_count_summary_filename="${output_dir}/detailed_stats/metagenome_read_counts.tsv"
+bin_mapping_summary_filename="${output_dir}/detailed_stats/bin_mapping_stats.tsv"
 
 # Find bin and raw read files
 bin_paths=($(find -L ${refined_bin_dir} -iname "*.fa")) # Careful - make sure the files match *.fa!
@@ -53,7 +54,39 @@ iterations=$((${#bin_paths[@]}*${#raw_read_paths[@]}))
 
 (>&2 echo "[ $(date -u) ]: found ${#bin_paths[@]} genome bins with extension *.fa in the refined_bin_dir")
 (>&2 echo "[ $(date -u) ]: found ${#raw_read_paths[@]} set of unassembled metagenomic reads in the raw_read_dir")
-(>&2 echo "[ $(date -u) ]: this means found ${#bin_paths[@]} * ${#raw_read_paths[@]} = ${iterations} combinations of mapping will be run")
+
+# Initialize output metagenome read count file
+(>&2 echo "[ $(date -u) ]: Initiatilizing '${read_count_summary_filename##*/}'")
+printf "metagenome\ttotal_reads\tR1_reads\tR2_reads\tse_reads\n" > ${read_count_summary_filename}
+
+# Get a count of the number of total reads in each metagenome
+(>&2 echo "[ $(date -u) ]: Counting total reads in the ${#raw_read_paths[@]} provided metagenomes")
+for raw_read_path in ${raw_read_paths[@]}; do
+
+	# Get base names of reads
+	raw_read_name_base=${raw_read_path%*_QC_R1.fastq.gz}
+	raw_read_name_base=${raw_read_name_base##*/}
+
+	# Assign generic variables for read mapping
+	R1=${raw_read_dir}/${raw_read_name_base}_QC_R1.fastq.gz
+	R2=${raw_read_dir}/${raw_read_name_base}_QC_R2.fastq.gz
+	se=${raw_read_dir}/${raw_read_name_base}_QC_se.fastq.gz
+
+	(>&2 printf "[ $(date -u) ]: Counting ${raw_read_name_base}*.fastq.gz: ")
+
+	# Count total reads (rough)
+	R1_count=$(($(zcat ${R1} | wc -l)/4))
+	R2_count=$(($(zcat ${R2} | wc -l)/4))
+	se_count=$(($(zcat ${se} | wc -l)/4))
+	total_count=$((${R1_count}+${R2_count}+${se_count}))
+	(>&2 echo "${R1_count} + ${R2_count} + ${se_count} = ${total_count} reads")
+
+	# Store in data frame
+	printf "${raw_read_name_base}\t${total_count}\t${R1_count}\t${R2_count}\t${se_count}\n" >> ${read_count_summary_filename}
+
+done
+
+(>&2 echo "[ $(date -u) ]: metagenome read counting complete")
 
 # Initialize output read stats file
 (>&2 echo "[ $(date -u) ]: Initiatilizing '${bin_mapping_summary_filename##*/}'")
@@ -63,6 +96,7 @@ printf "genome\tmetagenome\tmapped_reads\ttotal_reads\tgenome_length_nt\n" > ${b
 iteration=1
 
 # Run all against all in a nested 'for' loop
+(>&2 echo "[ $(date -u) ]: Mapping metagenome reads to genomes for ${#bin_paths[@]} * ${#raw_read_paths[@]} = ${iterations} combinations")
 for bin_path in ${bin_paths[@]}; do
 
 	# Get base name of bin
@@ -95,11 +129,9 @@ for bin_path in ${bin_paths[@]}; do
 			out=stdout threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
 			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${memory}G 2> ${logfile} | \
 			tee >(samtools view -@ $((${threads}/2)) -c -F 4 > ${output_dir}/mapping/mapped.tmp) | 
-			>(samtools view -@ $((${threads}/2)) -c > ${output_dir}/mapping/all.tmp) |
+			# >(samtools view -@ $((${threads}/2)) -c > ${output_dir}/mapping/all.tmp) | # No need to do this now that read counting is a separate step
 			samtools view -@ ${THREADS} -O bam | samtools sort -@ ${THREADS} | \
 			samtools depth -aa - > ${output_dir}/coverage/${raw_read_name_base}_to_${bin_name_base}.tsv
-
-		# (>&2 echo "[ $(date -u) ]: ${raw_read_name_base} to ${bin_name_base}: Calculating stats")
 
 		# Extract mapping stats
 		mapped_reads=$(cat ${output_dir}/mapping/mapped.tmp)
