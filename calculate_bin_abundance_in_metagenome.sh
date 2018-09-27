@@ -42,11 +42,20 @@ memory=$5 # in Gigabytes
 (>&2 echo "[ $(date -u) ]: threads: ${threads}")
 (>&2 echo "[ $(date -u) ]: memory: ${memory} GB")
 
+###### Script setup ######
 # Create folder structure in output dir
-mkdir -p ${output_dir}/mapping ${output_dir}/logs ${output_dir}/coverage ${output_dir}/detailed_stats
+mkdir -p ${output_dir}/mapping/logs \
+	${output_dir}/coverage/by_nucleotide \
+	${output_dir}/coverage/by_contig \
+	${output_dir}/coverage/logs \
+	${output_dir}/detailed_stats
+
+# Assign names to stats summary tables
 genome_stats_filename="${output_dir}/detailed_stats/genome_stats.tsv"
 read_count_summary_filename="${output_dir}/detailed_stats/metagenome_read_counts.tsv"
 bin_mapping_summary_filename="${output_dir}/detailed_stats/bin_mapping_stats.tsv"
+coverage_summary_filename="${output_dir}/detailed_stats/coverage_summary.tsv"
+final_stats_summary="${output_dir}/genome_bin_mapping_stats.tsv"
 
 # Find bin and raw read files
 bin_paths=($(find -L ${refined_bin_dir} -iname "*.fa")) # Careful - make sure the files match *.fa!
@@ -56,8 +65,9 @@ iterations=$((${#bin_paths[@]}*${#raw_read_paths[@]}))
 (>&2 echo "[ $(date -u) ]: found ${#bin_paths[@]} genome bins with extension *.fa in the refined_bin_dir")
 (>&2 echo "[ $(date -u) ]: found ${#raw_read_paths[@]} set of unassembled metagenomic reads in the raw_read_dir")
 
+
 ###### Part 1: calculate bin stats ######
-(>&2 echo "[ $(date -u) ]: collecting genome bin statistics using statswrapper.sh")
+(>&2 echo "[ $(date -u) ]: collecting genome bin statistics using statswrapper.sh (-> ${genome_stats_filename##*/})")
 (>&2 printf "[ $(date -u) ]: ")
 statswrapper.sh ${refined_bin_dir}/*.fa format=5 > ${genome_stats_filename}
 
@@ -101,6 +111,10 @@ done
 (>&2 echo "[ $(date -u) ]: Initiatilizing '${bin_mapping_summary_filename##*/}'")
 printf "genome\tmetagenome\tmapped_reads\n" > ${bin_mapping_summary_filename}
 
+# Initialize coverage summary file
+echo "[ $(date -u) ]: Initializing coverage summary table"
+printf "genome\tmetagenome\tcoverage_mean\tcoverage_sd\tpercent_contigs_with_zero_coverage_event\tcoverage_mean_filtered\tcoverage_sd_filtered\tpercent_contigs_with_zero_coverage_event_filtered\n" > ${coverage_summary_filename}
+
 # Start counting the number of iterations processed
 iteration=1
 
@@ -122,17 +136,18 @@ for bin_path in ${bin_paths[@]}; do
 		R1=${raw_read_dir}/${raw_read_name_base}_QC_R1.fastq.gz
 		R2=${raw_read_dir}/${raw_read_name_base}_QC_R2.fastq.gz
 		se=${raw_read_dir}/${raw_read_name_base}_QC_se.fastq.gz
-		logfile=${output_dir}/logs/${bin_name_base}_to_${raw_read_name_base}_contig_coverage_stats.log
+		samtools_depth_filename="${output_dir}/coverage/by_nucleotide/${raw_read_name_base}_to_${bin_name_base}.tsv"
+		mapping_logfile=${output_dir}/mapping/logs/${bin_name_base}_to_${raw_read_name_base}_contig_coverage_stats.log
 
 		# Read map AND pipe directly to stats (to avoid excessive input/output, which is rough on hard drives)
 		(>&2 printf "[ $(date -u) ]: ${iteration}: mapping '${raw_read_name_base}*fastq.gz' to '${bin_name_base}': ")
 		bbwrap.sh nodisk=t ref=${bin_path} in1=${R1},${se} in2=${R2},null perfectmode=t trimreaddescriptions=t \
 			out=stdout threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
-			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${memory}G 2> ${logfile} | \
-			tee >(samtools view -@ $((${threads}/2)) -c -F 4 > ${output_dir}/mapping/mapped.tmp) | 
-			# >(samtools view -@ $((${threads}/2)) -c > ${output_dir}/mapping/all.tmp) | # No need to do this now that read counting is a separate step
-			samtools view -@ ${THREADS} -O bam | samtools sort -@ ${THREADS} | \
-			samtools depth -aa - > ${output_dir}/coverage/${raw_read_name_base}_to_${bin_name_base}.tsv
+			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${memory}G 2> ${mapping_logfile} | \
+			tee >(samtools view -c -F 4 > ${output_dir}/mapping/mapped.tmp) | 
+			# >(samtools view -c > ${output_dir}/mapping/all.tmp) | # No need to do this now that read counting is a separate step
+			samtools view -@ ${threads} -O bam | samtools sort -@ ${threads} 2>/dev/null | \
+			samtools depth -aa - > ${samtools_depth_filename}
 
 		# Extract mapping stats
 		mapped_reads=$(cat ${output_dir}/mapping/mapped.tmp)
@@ -144,15 +159,36 @@ for bin_path in ${bin_paths[@]}; do
 		# Clean up
 		rm ${output_dir}/mapping/mapped.tmp
 
+
+		# Set some variables for coverage stats
+		coverage_by_contig_filename="${output_dir}/coverage/by_contig/${raw_read_name_base}_to_${bin_name_base}.tsv"
+		coverage_logfile="${output_dir}/coverage/logs/${raw_read_name_base}_to_${bin_name_base}_summary.log"
+		zero_cov_threshold=100 # TODO - HARD-CODED for now!
+
+		# Roughly estimate read length of metagenome
+		# TODO - improve this.
+		read_length=$(($(zcat ${R1} | head -n 2 | tail -n 1 | wc -c)-1))
+
+		# Summarize coverage stats
+		(>&2 printf "[ $(date -u) ]: ${iteration}: summarizing coverage stats (assumed read length of ${read_length})")
+		calculate_coverage_stats.R --samtools_coverage_table ${samtools_depth_filename} --bin_ID ${bin_name_base} \
+			--metagenome_ID ${raw_read_name_base} --output_contig_stats_table ${coverage_by_contig_filename} \
+			--read_length ${read_length} --zero_coverage_threshold ${zero_cov_threshold} 2> ${coverage_logfile} | \
+			tail -n 1 >> ${coverage_summary_filename}
+
+
 		# Increase the iterator for tracking the number of processed genome-metagenome pairs
 		iteration_tmp=$((${iteration}+1))
 		iteration=${iteration_tmp}
 
 	done
 done
+(>&2 echo "[ $(date -u) ]: read mapping complete")
 
-# Cleanup
-rm -r ${output_dir}/mapping
+
+
+
+
 
 (>&2 echo "[ $(date -u) ]: ${0##*/}: Finished.")
 
