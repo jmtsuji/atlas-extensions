@@ -16,8 +16,8 @@ if [ $# == 0 ]; then
 	printf "              git clone https://github.com/jmtsuji/atlas-extensions.git\n"
 	printf "              cd atlas-extensions\n"
 	printf "              git checkout perfectmode\n" # TODO - eliminate this as the script is merged into the master
-	printf "              env_path=$(which samtools)"
-	printf "              env_path=${env_path%/*}"
+	printf "              env_path=\$(which samtools)"
+	printf "              env_path=\${env_path%/*}"
 	printf "              cp calculate_bin_abundance_in_metagenome.sh calculate_coverage_stats.R aggregate_mapping_stats.R \${env_path}\n"
 	printf "Usage: ${0##*/} refined_bin_dir raw_read_dir output_dir threads memory 2>&1 | tee ${script_name}.log\n\n"
 	printf "Usage details:\n"
