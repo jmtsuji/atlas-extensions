@@ -2,36 +2,36 @@
 set -euo pipefail
 
 # If no input is provided, provide help and exit
-if [ $# == 0 ]
-    then
-    printf "$(basename $0): Wrapper to calculate the read recruitment of genome bins to metagenomes.\n"
-    printf "Contact Jackson M. Tsuji (jackson.tsuji@uwaterloo.ca) for bug reports or feature requests.\n\n"
-    printf "Installation: you can install all dependencies via conda and then add the scripts from the Github repo with:\n"
-    printf "              conda create -y -n calc_bin_abundance -c conda-forge -c bioconda samtools bbmap\n"
-    printf "              source activate calc_bin_abundance\n\n"
-    printf "Usage: $(basename $0) refined_bin_dir raw_read_dir output_dir threads memory 2>&1 | tee $(basename $0 .sh).log\n\n"
-    printf "Usage details:\n"
-    printf "   1. refined_bin_dir: Directory containing genomes/bins. MUST have extension *.fa!! Symlinks are okay.\n"
-    printf "   2. raw_read_dir: Directory containing QC'ed, unassembled metagenomic reads with naming structure matching that of the ATLAS pipeline.\n"
-    printf "                    *QC_R1.fastq.gz, *QC_R2.fastq.gz, and *QC_se.fastq.gz all needed. Symlinks are okay.\n"
-    printf "   3. output_dir: Directory where you want the results to be output. Anything already there might be overwritten.\n"
-    printf "   4. threads: number of threads to run. Minimum 2.\n"
-    printf "   5. memory: in gigabytes.\n\n"
-    exit 1
+if [ $# == 0 ]; then
+	# Assign script name
+	script_name=${0##*/}
+	script_name=${0%.*}
+
+	# Help statement
+	printf "${0##*/}: Wrapper to calculate the read recruitment of genome bins to metagenomes.\n"
+	printf "Contact Jackson M. Tsuji (jackson.tsuji@uwaterloo.ca) for bug reports or feature requests.\n\n"
+	printf "Installation: you can install all dependencies via conda and then add the scripts from the Github repo with:\n"
+	printf "              conda create -y -n calc_bin_abundance -c conda-forge -c bioconda samtools bbmap\n"
+	printf "              source activate calc_bin_abundance\n\n"
+	printf "Usage: ${0##*/} refined_bin_dir raw_read_dir output_dir threads memory 2>&1 | tee ${script_name}.log\n\n"
+	printf "Usage details:\n"
+	printf "   1. refined_bin_dir: Directory containing genomes/bins. MUST have extension *.fa!! Symlinks are okay.\n"
+	printf "   2. raw_read_dir: Directory containing QC'ed, unassembled metagenomic reads with naming structure matching that of the ATLAS pipeline.\n"
+	printf "                    *QC_R1.fastq.gz, *QC_R2.fastq.gz, and *QC_se.fastq.gz all needed. Symlinks are okay.\n"
+	printf "   3. output_dir: Directory where you want the results to be output. Anything already there might be overwritten.\n"
+	printf "   4. threads: number of threads to run.\n"
+	printf "   5. memory: in gigabytes.\n\n"
+
+	# Exit
+	exit 1
 fi
 
 # Set user variables
 refined_bin_dir=$1 # bins MUST have extension *.fa
 raw_read_dir=$2 # reads MUST be output of ATLAS QC and match naming structure. R1, R2, se reads all need to be there, for all samples.
 output_dir=$3
-THREADS=$4
-MEMORY=$5 # in Gigabytes
-
-# Check threads >= 2 (otherwise, will send -@ 0 argument to samtools view!)
-if [ ${THREADS} < 2 ]; then
-	(>&2 echo "ERROR: You specified ${THREADS} threads, when the minimum is 2. Exiting...")
-	exit 1
-done
+threads=$4
+memory=$5 # in Gigabytes
 
 # Startup reporting
 (>&2 echo "[ $(date -u) ]: Running ${0##*/}")
@@ -39,8 +39,8 @@ done
 (>&2 echo "[ $(date -u) ]: raw_read_dir: ${raw_read_dir}")
 (>&2 echo "[ $(date -u) ]: output_dir: ${output_dir}")
 (>&2 echo "[ $(date -u) ]: bin_mapping_summary_filename: bin_mapping_stats.tsv (in output_dir)")
-(>&2 echo "[ $(date -u) ]: threads: ${THREADS}")
-(>&2 echo "[ $(date -u) ]: memory: ${MEMORY} GB")
+(>&2 echo "[ $(date -u) ]: threads: ${threads}")
+(>&2 echo "[ $(date -u) ]: memory: ${memory} GB")
 
 # Create folder structure in output dir
 mkdir -p ${output_dir}/mapping ${output_dir}/logs
@@ -89,10 +89,10 @@ for bin_path in ${bin_paths[@]}; do
 		# Read map AND pipe directly to stats (to avoid excessive input/output, which is rough on hard drives)
 		(>&2 echo "[ $(date -u) ]: mapping '${raw_read_name_base}*fastq.gz' to '${bin_name_base}' (log: logs/${bin_name_base}_to_${raw_read_name_base}_contig_coverage_stats.log)")
 		bbwrap.sh nodisk=t ref=${contigs} in1=${R1},${se} in2=${R2},null perfectmode=t trimreaddescriptions=t \
-			out=stdout threads=${THREADS} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
-			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${MEMORY}G 2> ${logfile} | \
-			tee >(samtools view -@ $((${THREADS}/2)) -c -F 4 > ${output_dir}/mapping/mapped.tmp) | 
-			samtools view -@ $((${THREADS}/2)) -c > ${output_dir}/mapping/all.tmp
+			out=stdout threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
+			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${memory}G 2> ${logfile} | \
+			tee >(samtools view -@ $((${threads}/2)) -c -F 4 > ${output_dir}/mapping/mapped.tmp) | 
+			samtools view -@ $((${threads}/2)) -c > ${output_dir}/mapping/all.tmp
 
 		# (>&2 echo "[ $(date -u) ]: ${raw_read_name_base} to ${bin_name_base}: Calculating stats")
 
