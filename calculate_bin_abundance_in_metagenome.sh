@@ -90,7 +90,7 @@ done
 
 # Initialize output read stats file
 (>&2 echo "[ $(date -u) ]: Initiatilizing '${bin_mapping_summary_filename##*/}'")
-printf "genome\tmetagenome\tmapped_reads\ttotal_reads\tgenome_length_nt\n" > ${bin_mapping_summary_filename}
+printf "genome\tmetagenome\tmapped_reads\tgenome_length_nt\n" > ${bin_mapping_summary_filename}
 
 # Start counting the number of iterations processed
 iteration=1
@@ -124,7 +124,7 @@ for bin_path in ${bin_paths[@]}; do
 		logfile=${output_dir}/logs/${bin_name_base}_to_${raw_read_name_base}_contig_coverage_stats.log
 
 		# Read map AND pipe directly to stats (to avoid excessive input/output, which is rough on hard drives)
-		(>&2 echo "[ $(date -u) ]: ${iteration}: mapping '${raw_read_name_base}*fastq.gz' to '${bin_name_base}' (log: logs/${raw_read_name_base}_to_${bin_name_base}_contig_coverage_stats.log)")
+		(>&2 printf "[ $(date -u) ]: ${iteration}: mapping '${raw_read_name_base}*fastq.gz' to '${bin_name_base}': ")
 		bbwrap.sh nodisk=t ref=${bin_path} in1=${R1},${se} in2=${R2},null perfectmode=t trimreaddescriptions=t \
 			out=stdout threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
 			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${memory}G 2> ${logfile} | \
@@ -135,8 +135,7 @@ for bin_path in ${bin_paths[@]}; do
 
 		# Extract mapping stats
 		mapped_reads=$(cat ${output_dir}/mapping/mapped.tmp)
-		total_reads=$(cat ${output_dir}/mapping/all.tmp)
-		(>&2 echo "[ $(date -u) ]: ${bin_name_base} to ${raw_read_name_base}: ${mapped_reads} mapped; ${total_reads} total. Adding to TSV.")
+		(>&2 echo "${mapped_reads} mapped reads")
 
 		## Calculate additional stats - doesn't work in Bash alone because of rounding small numbers
 		#percent_recruited_reads=$((${mapped_reads}/${total_reads}*100))
@@ -144,10 +143,10 @@ for bin_path in ${bin_paths[@]}; do
 		#average_coverage_per_million_reads=$((${average_coverage}/${total_reads}*1000000))
 
 		# Add to TSV file
-		printf "${bin_name_base}\t${raw_read_name_base}\t${mapped_reads}\t${total_reads}\t${genome_length_nt}\n" >> ${bin_mapping_summary_filename}
+		printf "${bin_name_base}\t${raw_read_name_base}\t${mapped_reads}\t${genome_length_nt}\n" >> ${bin_mapping_summary_filename}
 
 		# Clean up
-		rm ${output_dir}/mapping/mapped.tmp ${output_dir}/mapping/all.tmp
+		rm ${output_dir}/mapping/mapped.tmp
 
 		# Increase the iterator for tracking the number of processed genome-metagenome pairs
 		iteration_tmp=$((${iteration}+1))
