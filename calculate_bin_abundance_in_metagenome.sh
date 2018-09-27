@@ -11,7 +11,7 @@ if [ $# == 0 ]; then
 	printf "${0##*/}: Wrapper to calculate the read recruitment of genome bins to metagenomes.\n"
 	printf "Contact Jackson M. Tsuji (jackson.tsuji@uwaterloo.ca) for bug reports or feature requests.\n\n"
 	printf "Installation: you can install all dependencies via conda and then add the scripts from the Github repo with:\n"
-	printf "              conda create -y -n bin_mapping_stats -c conda-forge -c bioconda -c r samtools bbmap r r-plyr r-dplyr\n"
+	printf "              conda create -y -n bin_mapping_stats -c conda-forge -c bioconda -c r samtools bbmap r r-plyr r-dplyr r-getopt\n"
 	printf "              source activate bin_mapping_stats\n"
 	printf "              git clone https://github.com/jmtsuji/atlas-extensions.git\n"
 	printf "              cd atlas-extensions\n"
