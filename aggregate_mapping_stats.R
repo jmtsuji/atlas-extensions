@@ -173,13 +173,12 @@ main <- function() {
   ##### 4. Coverage stats
   coverage_stats <- read_tsv_table(coverage_summary_filename)
   ### Example
-  # bin_ID  metagenome_ID   coverage_mean   coverage_sd     percent_contigs_with_zero_coverage_event        coverage_mean_filtered  coverage_sd_filtered    percent_contigs_with_ze$
+  # genome  metagenome_   coverage_mean   coverage_sd     percent_contigs_with_zero_coverage_event        coverage_mean_filtered  coverage_sd_filtered    percent_contigs_with_ze$
   # Bin001        L227-2013-6m    7.46117798098696        9.32951522614479        89.3238434163701        8.46412909077082        9.73329436732834        75.6227758007117
   # Bin001        L227-2013-6m    3.57531510053049        4.71256012846482        94.8473282442748        3.81342539634244        4.82750775745679        81.1068702290076
   # Bin001        L227-2013-6m    1.68890355501351        3.2299455150493 98.6149584487535        1.81322588275404        3.32302874589562        90.3047091412742
   
-  coverage_stats <- dplyr::select(coverage_stats, bin_ID, metagenome_ID, coverage_mean, coverage_sd)
-  coverage_stats <- dplyr::rename(coverage_stats, genome = bin_ID, metagenome = metagenome_ID)
+  coverage_stats <- dplyr::select(coverage_stats, genome, metagenome, coverage_mean, coverage_sd)
   
   
   ##### Combine tables
