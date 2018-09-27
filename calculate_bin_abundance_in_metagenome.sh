@@ -11,8 +11,14 @@ if [ $# == 0 ]; then
 	printf "${0##*/}: Wrapper to calculate the read recruitment of genome bins to metagenomes.\n"
 	printf "Contact Jackson M. Tsuji (jackson.tsuji@uwaterloo.ca) for bug reports or feature requests.\n\n"
 	printf "Installation: you can install all dependencies via conda and then add the scripts from the Github repo with:\n"
-	printf "              conda create -y -n calc_bin_abundance -c conda-forge -c bioconda samtools bbmap\n"
-	printf "              source activate calc_bin_abundance\n\n"
+	printf "              conda create -y -n bin_mapping_stats -c conda-forge -c bioconda -c r samtools bbmap r r-plyr r-dplyr\n"
+	printf "              source activate bin_mapping_stats\n"
+	printf "              git clone https://github.com/jmtsuji/atlas-extensions.git\n"
+	printf "              cd atlas-extensions\n"
+	printf "              git checkout perfectmode\n" # TODO - eliminate this as the script is merged into the master
+	printf "              env_path=$(which samtools)"
+	printf "              env_path=${env_path%/*}"
+	printf "              cp calculate_bin_abundance_in_metagenome.sh calculate_coverage_stats.R aggregate_mapping_stats.R \${env_path}\n"
 	printf "Usage: ${0##*/} refined_bin_dir raw_read_dir output_dir threads memory 2>&1 | tee ${script_name}.log\n\n"
 	printf "Usage details:\n"
 	printf "   1. refined_bin_dir: Directory containing genomes/bins. MUST have extension *.fa!! Symlinks are okay.\n"
@@ -186,9 +192,15 @@ done
 (>&2 echo "[ $(date -u) ]: read mapping complete")
 
 
-
-
+###### Part 4: aggregate stats ######
+(>&2 echo "[ $(date -u) ]: aggregating stats (-> ${final_stats_summary##*/})")
+aggregate_mapping_stats.R -g ${genome_stats_filename} \
+	-r ${read_count_summary_filename} \
+	-m ${bin_mapping_summary_filename} \
+	-c ${coverage_summary_filename} \
+	-o ${final_stats_summary} 2>/dev/null
 
 
 (>&2 echo "[ $(date -u) ]: ${0##*/}: Finished.")
+
 
