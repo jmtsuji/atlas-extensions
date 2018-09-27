@@ -191,7 +191,7 @@ main <- function() {
   # Write output table
   message(ts(), "Writing output table")
   write.table(x = output_table, file = output_final_stats_summary_filename, sep = "\t",
-              row.names = FALSE, col.names = TRUE)
+              row.names = FALSE, col.names = TRUE, quote = FALSE)
   
   message(ts(), "Done.")
   

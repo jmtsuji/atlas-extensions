@@ -363,7 +363,8 @@ main <- function() {
   ### Write supplemental table with per-contig stats
   message(ts(), "Binding supplementary table of per-contig coverage stats and writing to file")
   supplemental_table <- bind_supplemental_table(bin_ID, metagenome_ID, per_contig_stats, per_contig_stats_filtered)
-  write.table(x = supplemental_table, file = output_contig_stats_table_filename, sep = "\t", row.names = FALSE, col.names = TRUE)
+  write.table(x = supplemental_table, file = output_contig_stats_table_filename, sep = "\t", 
+              row.names = FALSE, col.names = TRUE, quote = FALSE)
   
   # Print whole-sample stats to STDOUT
   message(ts(), "Summarizing overall stats (writing to STDOUT)")
