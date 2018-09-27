@@ -173,7 +173,10 @@ for bin_path in ${bin_paths[@]}; do
 
 		# Roughly estimate read length of metagenome
 		# TODO - improve this.
-		read_length=$(($(zcat ${R1} | head -n 2 | tail -n 1 | wc -c)-1))
+		# Temporarily disable script exiting with non-normal exit statuses. 'Head' may be causing problems - see https://stackoverflow.com/a/19120674 (accessed 180927)
+		set +e
+		read_length=$(($(zcat ${R1} | head -n 2 | tail -n 1 | wc -m)-1))
+		set -e
 
 		# Summarize coverage stats
 		(>&2 printf "[ $(date -u) ]: ${iteration}: summarizing coverage stats (assumed read length of ${read_length})")
