@@ -44,6 +44,7 @@ memory=$5 # in Gigabytes
 
 # Create folder structure in output dir
 mkdir -p ${output_dir}/mapping ${output_dir}/logs ${output_dir}/coverage ${output_dir}/detailed_stats
+genome_stats_filename="${output_dir}/detailed_stats/genome_stats.tsv"
 read_count_summary_filename="${output_dir}/detailed_stats/metagenome_read_counts.tsv"
 bin_mapping_summary_filename="${output_dir}/detailed_stats/bin_mapping_stats.tsv"
 
@@ -55,6 +56,13 @@ iterations=$((${#bin_paths[@]}*${#raw_read_paths[@]}))
 (>&2 echo "[ $(date -u) ]: found ${#bin_paths[@]} genome bins with extension *.fa in the refined_bin_dir")
 (>&2 echo "[ $(date -u) ]: found ${#raw_read_paths[@]} set of unassembled metagenomic reads in the raw_read_dir")
 
+###### Part 1: calculate bin stats ######
+(>&2 echo "[ $(date -u) ]: collecting genome bin statistics using statswrapper.sh")
+(>&2 printf "[ $(date -u) ]: ")
+statswrapper.sh ${refined_bin_dir}/*.fa format=5 > ${genome_stats_filename}
+
+
+###### Part 2: count metagenome reads ######
 # Initialize output metagenome read count file
 (>&2 echo "[ $(date -u) ]: Initiatilizing '${read_count_summary_filename##*/}'")
 printf "metagenome\ttotal_reads\tR1_reads\tR2_reads\tse_reads\n" > ${read_count_summary_filename}
@@ -85,12 +93,13 @@ for raw_read_path in ${raw_read_paths[@]}; do
 	printf "${raw_read_name_base}\t${total_count}\t${R1_count}\t${R2_count}\t${se_count}\n" >> ${read_count_summary_filename}
 
 done
-
 (>&2 echo "[ $(date -u) ]: metagenome read counting complete")
 
+
+###### Part 3: map reads ######
 # Initialize output read stats file
 (>&2 echo "[ $(date -u) ]: Initiatilizing '${bin_mapping_summary_filename##*/}'")
-printf "genome\tmetagenome\tmapped_reads\tgenome_length_nt\n" > ${bin_mapping_summary_filename}
+printf "genome\tmetagenome\tmapped_reads\n" > ${bin_mapping_summary_filename}
 
 # Start counting the number of iterations processed
 iteration=1
@@ -102,14 +111,6 @@ for bin_path in ${bin_paths[@]}; do
 	# Get base name of bin
 	bin_name_base=${bin_path%.*}
 	bin_name_base=${bin_name_base##*/}
-
-	# Get total nucleotide length in bin for later
-	genome_char_count=$(grep -v "^>" ${bin_path} | wc)
-	genome_new_lines=$(echo ${genome_char_count} | cut -d ' ' -f 1)
-	genome_total_chars=$(echo ${genome_char_count} | cut -d ' ' -f 3)
-	genome_length_nt=$((${genome_total_chars}-${genome_new_lines}))
-
-	(>&2 echo "[ $(date -u) ]: Starting on bin '${bin_path##*/}' with length ${genome_length_nt} nt")
 
 	for raw_read_path in ${raw_read_paths[@]}; do
 
@@ -138,7 +139,7 @@ for bin_path in ${bin_paths[@]}; do
 		(>&2 echo "${mapped_reads} mapped reads")
 
 		# Add to TSV file
-		printf "${bin_name_base}\t${raw_read_name_base}\t${mapped_reads}\t${genome_length_nt}\n" >> ${bin_mapping_summary_filename}
+		printf "${bin_name_base}\t${raw_read_name_base}\t${mapped_reads}\n" >> ${bin_mapping_summary_filename}
 
 		# Clean up
 		rm ${output_dir}/mapping/mapped.tmp
