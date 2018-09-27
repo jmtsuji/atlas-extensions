@@ -118,7 +118,7 @@ done
 printf "genome\tmetagenome\tmapped_reads\n" > ${bin_mapping_summary_filename}
 
 # Initialize coverage summary file
-echo "[ $(date -u) ]: Initializing coverage summary table"
+echo "[ $(date -u) ]: Initializing '${coverage_summary_filename}'"
 printf "genome\tmetagenome\tcoverage_mean\tcoverage_sd\tpercent_contigs_with_zero_coverage_event\tcoverage_mean_filtered\tcoverage_sd_filtered\tpercent_contigs_with_zero_coverage_event_filtered\n" > ${coverage_summary_filename}
 
 # Start counting the number of iterations processed
@@ -148,7 +148,7 @@ for bin_path in ${bin_paths[@]}; do
 		# Read map AND pipe directly to stats (to avoid excessive input/output, which is rough on hard drives)
 		(>&2 printf "[ $(date -u) ]: ${iteration}: mapping '${raw_read_name_base}*fastq.gz' to '${bin_name_base}': ")
 		bbwrap.sh nodisk=t ref=${bin_path} in1=${R1},${se} in2=${R2},null perfectmode=t trimreaddescriptions=t \
-			out=stdout threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
+			outm=stdout threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
 			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${memory}G 2> ${mapping_logfile} | \
 			tee >(samtools view -c -F 4 > ${output_dir}/mapping/mapped.tmp) | 
 			# >(samtools view -c > ${output_dir}/mapping/all.tmp) | # No need to do this now that read counting is a separate step
