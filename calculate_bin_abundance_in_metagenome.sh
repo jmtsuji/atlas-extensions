@@ -25,7 +25,7 @@ if [ $# == 0 ]; then
 	printf "   2. raw_read_dir: Directory containing QC'ed, unassembled metagenomic reads with naming structure matching that of the ATLAS pipeline.\n"
 	printf "                    *QC_R1.fastq.gz, *QC_R2.fastq.gz, and *QC_se.fastq.gz all needed. Symlinks are okay.\n"
 	printf "   3. output_dir: Directory where you want the results to be output. Anything already there might be overwritten.\n"
-	printf "   4. threads: number of threads to run.\n"
+	printf "   4. threads: number of threads to run. Caps out for performance increase at around 12-16.\n"
 	printf "   5. memory: in gigabytes.\n\n"
 
 	# Exit
@@ -41,6 +41,7 @@ memory=$5 # in Gigabytes
 
 # Startup reporting
 (>&2 echo "[ $(date -u) ]: Running ${0##*/}")
+(>&2 echo "[ $(date -u) ]: Command: ${0##*/} ${@}")
 (>&2 echo "[ $(date -u) ]: refined_bin_dir: ${refined_bin_dir}")
 (>&2 echo "[ $(date -u) ]: raw_read_dir: ${raw_read_dir}")
 (>&2 echo "[ $(date -u) ]: output_dir: ${output_dir}")
@@ -179,7 +180,7 @@ for bin_path in ${bin_paths[@]}; do
 		set -e
 
 		# Summarize coverage stats
-		(>&2 printf "[ $(date -u) ]: ${iteration}: summarizing coverage stats (assumed read length of ${read_length})")
+		(>&2 echo "[ $(date -u) ]: ${iteration}: summarizing coverage stats (assumed read length of ${read_length})")
 		calculate_coverage_stats.R --samtools_coverage_table ${samtools_depth_filename} --bin_ID ${bin_name_base} \
 			--metagenome_ID ${raw_read_name_base} --output_contig_stats_table ${coverage_by_contig_filename} \
 			--read_length ${read_length} --zero_coverage_threshold ${zero_cov_threshold} 2> ${coverage_logfile} | \
