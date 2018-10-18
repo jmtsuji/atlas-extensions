@@ -53,6 +53,7 @@ memory=$5 # in Gigabytes
 # Create folder structure in output dir
 mkdir -p ${output_dir}/mapping/logs \
 	${output_dir}/mapping/lists \
+	${output_dir}/mapping/bam \
 	${output_dir}/coverage/by_nucleotide \
 	${output_dir}/coverage/by_contig \
 	${output_dir}/coverage/logs \
@@ -152,34 +153,32 @@ for bin_path in ${bin_paths[@]}; do
 		samtools_depth_filename="${output_dir}/coverage/by_nucleotide/${raw_read_name_base}_to_${bin_name_base}.tsv"
 		mapping_logfile=${output_dir}/mapping/logs/${bin_name_base}_to_${raw_read_name_base}_contig_coverage_stats.log
 		bam_filename_base="${raw_read_name_base}_to_${bin_name_base}"
-		bam_filename="${output_dir}/mapping/${bam_filename_base}.bam"
+		bam_filename="${output_dir}/mapping/bam/${bam_filename_base}.bam"
 
 		# Read map AND pipe directly to stats (to avoid excessive input/output, which is rough on hard drives)
 		(>&2 printf "[ $(date -u) ]: ${iteration}: mapping '${raw_read_name_base}*fastq.gz' to '${bin_name_base}': ")
 		bbwrap.sh nodisk=t ref=${bin_path} in1=${R1},${se} in2=${R2},null perfectmode=t trimreaddescriptions=t \
 			outm=stdout threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
 			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${memory}G 2> ${mapping_logfile} | \
-			tee >(samtools view -c -F 4 > ${output_dir}/mapping/mapped.tmp) | 
 			samtools view -@ ${threads} -O bam | samtools sort -@ ${threads} 2>/dev/null | \
-			tee ${bam_filename} | \
-			samtools depth -aa - > ${samtools_depth_filename}
+			> ${bam_filename}
 
-		# Extract mapping stats
-		mapped_reads=$(cat ${output_dir}/mapping/mapped.tmp)
+		# Calculate the number of mapped reads
+		mapped_reads=$(samtools view -c -F 4 ${bam_filename})
 		(>&2 echo "${mapped_reads} mapped reads")
 
 		# Add to TSV file
 		printf "${bin_name_base}\t${raw_read_name_base}\t${mapped_reads}\n" >> ${bin_mapping_summary_filename}
-
-		# Clean up
-		rm ${output_dir}/mapping/mapped.tmp
+		
+		# Generate coverage profile
+		samtools depth -aa ${bam_filename} > ${samtools_depth_filename}
 
 		# For Emilie: export mapped reads and make data table
 		mapped_read_list_dir="${output_dir}/mapping/lists/${raw_read_name_base}" # TODO - set these variables earlier in the code for clarity
 		mapped_read_list_filepath="${mapped_read_list_dir}/${bin_name_base}.list"
-		(>&2 printf "[ $(date -u) ]: ${iteration}: Generating summary of mapped reads")
+		(>&2 printf "[ $(date -u) ]: ${iteration}: Generating summary of mapped reads\n")
 		mkdir -p ${mapped_read_list_dir} # TODO - clean this up
-		samtools view -F 4 ${bam_filename} | cut -d $'\t' -f 1 > ${mapped_read_list_filepath} # TODO - just do this as part of the tee above to avoid writing the bam to disk
+		samtools view -F 4 ${bam_filename} | cut -d $'\t' -f 1 > ${mapped_read_list_filepath}
 		# Add metadata to a TSV table
 		printf "${bin_name_base}\t${raw_read_name_base}\t${mapped_read_list_filepath}\n" >> ${mapped_read_list_summary_filename}
 
