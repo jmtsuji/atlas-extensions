@@ -52,6 +52,7 @@ memory=$5 # in Gigabytes
 ###### Script setup ######
 # Create folder structure in output dir
 mkdir -p ${output_dir}/mapping/logs \
+	${output_dir}/mapping/lists \
 	${output_dir}/coverage/by_nucleotide \
 	${output_dir}/coverage/by_contig \
 	${output_dir}/coverage/logs \
@@ -63,6 +64,7 @@ read_count_summary_filename="${output_dir}/detailed_stats/metagenome_read_counts
 bin_mapping_summary_filename="${output_dir}/detailed_stats/bin_mapping_stats.tsv"
 coverage_summary_filename="${output_dir}/detailed_stats/coverage_summary.tsv"
 final_stats_summary="${output_dir}/genome_bin_mapping_stats.tsv"
+mapped_read_list_summary_filename="${output_dir}/detailed_stats/mapped_read_list_metadata.tsv"
 
 # Find bin and raw read files
 bin_paths=($(find -L ${refined_bin_dir} -iname "*.fa")) # Careful - make sure the files match *.fa!
@@ -122,6 +124,10 @@ printf "genome\tmetagenome\tmapped_reads\n" > ${bin_mapping_summary_filename}
 echo "[ $(date -u) ]: Initializing '${coverage_summary_filename}'"
 printf "genome\tmetagenome\tcoverage_mean\tcoverage_sd\tpercent_contigs_with_zero_coverage_event\tcoverage_mean_filtered\tcoverage_sd_filtered\tpercent_contigs_with_zero_coverage_event_filtered\n" > ${coverage_summary_filename}
 
+# Inititalize Emilie table
+echo "[ $(date -u) ]: Initializing '${mapped_read_list_summary_filename}'"
+printf "genome\tmetagenome\tmapped_read_list_filepath\n" > ${mapped_read_list_summary_filename}
+
 # Start counting the number of iterations processed
 iteration=1
 
@@ -145,6 +151,8 @@ for bin_path in ${bin_paths[@]}; do
 		se=${raw_read_dir}/${raw_read_name_base}_QC_se.fastq.gz
 		samtools_depth_filename="${output_dir}/coverage/by_nucleotide/${raw_read_name_base}_to_${bin_name_base}.tsv"
 		mapping_logfile=${output_dir}/mapping/logs/${bin_name_base}_to_${raw_read_name_base}_contig_coverage_stats.log
+		bam_filename_base="${raw_read_name_base}_to_${bin_name_base}"
+		bam_filename="${output_dir}/mapping/${bam_filename_base}.bam"
 
 		# Read map AND pipe directly to stats (to avoid excessive input/output, which is rough on hard drives)
 		(>&2 printf "[ $(date -u) ]: ${iteration}: mapping '${raw_read_name_base}*fastq.gz' to '${bin_name_base}': ")
@@ -152,8 +160,8 @@ for bin_path in ${bin_paths[@]}; do
 			outm=stdout threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
 			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${memory}G 2> ${mapping_logfile} | \
 			tee >(samtools view -c -F 4 > ${output_dir}/mapping/mapped.tmp) | 
-			# >(samtools view -c > ${output_dir}/mapping/all.tmp) | # No need to do this now that read counting is a separate step
 			samtools view -@ ${threads} -O bam | samtools sort -@ ${threads} 2>/dev/null | \
+			tee ${bam_filename} | \
 			samtools depth -aa - > ${samtools_depth_filename}
 
 		# Extract mapping stats
@@ -165,6 +173,15 @@ for bin_path in ${bin_paths[@]}; do
 
 		# Clean up
 		rm ${output_dir}/mapping/mapped.tmp
+
+		# For Emilie: export mapped reads and make data table
+		mapped_read_list_dir="${output_dir}/mapping/lists/${raw_read_name_base}" # TODO - set these variables earlier in the code for clarity
+		mapped_read_list_filepath="${mapped_read_list_dir}/${bin_name_base}.list"
+		(>&2 printf "[ $(date -u) ]: ${iteration}: Generating summary of mapped reads")
+		mkdir -p ${mapped_read_list_dir} # TODO - clean this up
+		samtools view -F 4 ${bam_filename} | cut -d $'\t' -f 1 > ${mapped_read_list_filepath} # TODO - just do this as part of the tee above to avoid writing the bam to disk
+		# Add metadata to a TSV table
+		printf "${bin_name_base}\t${raw_read_name_base}\t${mapped_read_list_filepath}\n" >> ${mapped_read_list_summary_filename}
 
 
 		# Only determine coverage stats if mapped reads > 0
