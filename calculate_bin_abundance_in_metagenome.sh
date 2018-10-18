@@ -151,7 +151,7 @@ for bin_path in ${bin_paths[@]}; do
 		R2=${raw_read_dir}/${raw_read_name_base}_QC_R2.fastq.gz
 		se=${raw_read_dir}/${raw_read_name_base}_QC_se.fastq.gz
 		samtools_depth_filename="${output_dir}/coverage/by_nucleotide/${raw_read_name_base}_to_${bin_name_base}.tsv"
-		mapping_logfile=${output_dir}/mapping/logs/${bin_name_base}_to_${raw_read_name_base}_contig_coverage_stats.log
+		mapping_logfile=${output_dir}/mapping/logs/${raw_read_name_base}_to_${bin_name_base}_contig_coverage_stats.log
 		bam_filename_base="${raw_read_name_base}_to_${bin_name_base}"
 		bam_filename="${output_dir}/mapping/bam/${bam_filename_base}.bam"
 
@@ -160,8 +160,7 @@ for bin_path in ${bin_paths[@]}; do
 		bbwrap.sh nodisk=t ref=${bin_path} in1=${R1},${se} in2=${R2},null perfectmode=t trimreaddescriptions=t \
 			outm=stdout threads=${threads} pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 \
 			local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx${memory}G 2> ${mapping_logfile} | \
-			samtools view -@ ${threads} -O bam | samtools sort -@ ${threads} 2>/dev/null | \
-			> ${bam_filename}
+			samtools view -@ ${threads} -O bam | samtools sort -@ ${threads} 2>/dev/null > ${bam_filename}
 
 		# Calculate the number of mapped reads
 		mapped_reads=$(samtools view -c -F 4 ${bam_filename})
