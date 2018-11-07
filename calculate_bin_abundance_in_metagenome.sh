@@ -127,7 +127,7 @@ printf "genome\tmetagenome\tcoverage_mean\tcoverage_sd\tpercent_contigs_with_zer
 
 # Inititalize Emilie table
 echo "[ $(date -u) ]: Initializing '${mapped_read_list_summary_filename}'"
-printf "genome\tmetagenome\tmapped_read_list_filepath\n" > ${mapped_read_list_summary_filename}
+printf "genome\tmetagenome\tmapped_read_list_filepath_R1\tmapped_read_list_filepath_R2\n" > ${mapped_read_list_summary_filename}
 
 # Start counting the number of iterations processed
 iteration=1
@@ -173,13 +173,17 @@ for bin_path in ${bin_paths[@]}; do
 		samtools depth -aa ${bam_filename} > ${samtools_depth_filename}
 
 		# For Emilie: export mapped reads and make data table
-		mapped_read_list_dir="${output_dir}/mapping/lists/${raw_read_name_base}" # TODO - set these variables earlier in the code for clarity
-		mapped_read_list_filepath="${mapped_read_list_dir}/${bin_name_base}.list"
+		# Keep R1 and R2 separate to avoid pseudoreplication
+		mapped_read_list_dir_R1="${output_dir}/mapping/lists/R1/${raw_read_name_base}" # TODO - set these variables earlier in the code for clarity
+		mapped_read_list_dir_R2="${output_dir}/mapping/lists/R2/${raw_read_name_base}" # TODO - set these variables earlier in the code for clarity
+		mapped_read_list_filepath_R1="${mapped_read_list_dir_R1}/${bin_name_base}.R1.list"
+		mapped_read_list_filepath_R2="${mapped_read_list_dir_R2}/${bin_name_base}.R2.list"
 		(>&2 printf "[ $(date -u) ]: ${iteration}: Generating summary of mapped reads\n")
 		mkdir -p ${mapped_read_list_dir} # TODO - clean this up
-		samtools view -F 4 ${bam_filename} | cut -d $'\t' -f 1 > ${mapped_read_list_filepath}
+		samtools view -F 4 -f 64 ${bam_filename} | cut -d $'\t' -f 1 > ${mapped_read_list_filepath_R1}
+		samtools view -F 4 -f 128 ${bam_filename} | cut -d $'\t' -f 1 > ${mapped_read_list_filepath_R2}
 		# Add metadata to a TSV table
-		printf "${bin_name_base}\t${raw_read_name_base}\t${mapped_read_list_filepath}\n" >> ${mapped_read_list_summary_filename}
+		printf "${bin_name_base}\t${raw_read_name_base}\t${mapped_read_list_filepath_R1}\t${mapped_read_list_filepath_R2}\n" >> ${mapped_read_list_summary_filename}
 
 
 		# Only determine coverage stats if mapped reads > 0
