@@ -180,7 +180,7 @@ for bin_path in ${bin_paths[@]}; do
 		mapped_read_list_filepath_R1="${mapped_read_list_dir_R1}/${bin_name_base}.R1.list"
 		mapped_read_list_filepath_R2="${mapped_read_list_dir_R2}/${bin_name_base}.R2.list"
 		(>&2 printf "[ $(date -u) ]: ${iteration}: Generating summary of mapped reads\n")
-		mkdir -p ${mapped_read_list_dir} # TODO - clean this up
+		mkdir -p ${mapped_read_list_dir_R1} ${mapped_read_list_dir_R2} # TODO - clean this up
 		samtools view -F 4 -f 64 ${bam_filename} | cut -d $'\t' -f 1 > ${mapped_read_list_filepath_R1}
 		samtools view -F 4 -f 128 ${bam_filename} | cut -d $'\t' -f 1 > ${mapped_read_list_filepath_R2}
 		# Add metadata to a TSV table
