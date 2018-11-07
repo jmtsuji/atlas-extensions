@@ -52,7 +52,8 @@ memory=$5 # in Gigabytes
 ###### Script setup ######
 # Create folder structure in output dir
 mkdir -p ${output_dir}/mapping/logs \
-	${output_dir}/mapping/lists \
+	${output_dir}/mapping/lists/R1 \
+	${output_dir}/mapping/lists/R2 \
 	${output_dir}/mapping/bam \
 	${output_dir}/coverage/by_nucleotide \
 	${output_dir}/coverage/by_contig \
